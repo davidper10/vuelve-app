@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { safeBack } from '@/lib/navigation';
+import { MomentsTimeline } from '@/components/MomentsTimeline';
 import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
@@ -135,19 +136,11 @@ export default function ViajeDetail() {
             {moments.length === 0 ? (
               <Text style={styles.emptyText}>Todavía no hay momentos guardados en este viaje.</Text>
             ) : (
-              moments.map((m) => (
-                <Pressable key={m.id} style={styles.momentCard} onPress={() => router.push(`/momento/${m.id}`)}>
-                  {momentPhotos[m.id] ? (
-                    <Image source={{ uri: momentPhotos[m.id] }} style={styles.momentThumb} />
-                  ) : (
-                    <View style={styles.momentThumb} />
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.momentTitle}>{m.title}</Text>
-                    {!!m.place_name && <Text style={styles.momentSub}>{m.place_name}</Text>}
-                  </View>
-                </Pressable>
-              ))
+              <MomentsTimeline
+                moments={moments}
+                photos={momentPhotos}
+                onPressMoment={(momentId) => router.push(`/momento/${momentId}`)}
+              />
             )}
           </>
         )}
@@ -236,15 +229,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   addMomentBtnText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 14 },
-  momentCard: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.sand,
-    borderRadius: radii.md,
-    padding: spacing.md,
-  },
-  momentThumb: { width: 52, height: 52, borderRadius: 12, backgroundColor: colors.sandDark },
   momentTitle: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
   momentSub: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.ink55, marginTop: 2 },
   diaryEntry: { borderBottomWidth: 1, borderColor: colors.line, paddingBottom: spacing.md },
