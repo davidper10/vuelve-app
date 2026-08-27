@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
@@ -21,6 +21,7 @@ export default function ViajeDetail() {
   const [moments, setMoments] = useState<Moment[]>([]);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [nfcTags, setNfcTags] = useState<NfcTag[]>([]);
+  const [momentPhotos, setMomentPhotos] = useState<Record<string, string>>({});
   const [tab, setTab] = useState<Tab>('recuerdos');
 
   const load = useCallback(async () => {
@@ -35,11 +36,31 @@ export default function ViajeDetail() {
     setMoments(momentsRes.data ?? []);
     setDiary(diaryRes.data ?? []);
     setNfcTags(nfcRes.data ?? []);
+
+    const momentIds = (momentsRes.data ?? []).map((m) => m.id);
+    if (momentIds.length > 0) {
+      const { data: links } = await supabase
+        .from('moment_memories')
+        .select('moment_id, memories(storage_path)')
+        .in('moment_id', momentIds);
+      const photos: Record<string, string> = {};
+      for (const link of links ?? []) {
+        const path = (link.memories as { storage_path: string } | null)?.storage_path;
+        if (path && !photos[link.moment_id]) {
+          photos[link.moment_id] = supabase.storage.from('memories').getPublicUrl(path).data.publicUrl;
+        }
+      }
+      setMomentPhotos(photos);
+    } else {
+      setMomentPhotos({});
+    }
   }, [id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   if (!trip) {
     return (
@@ -53,10 +74,28 @@ export default function ViajeDetail() {
 
   return (
     <ScrollView style={styles.screen} showsVerticalScrollIndicator={false}>
-      <LinearGradient colors={gradient} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.hero}>
+      <View style={styles.hero}>
+        {trip.cover_photo_url ? (
+          <Image source={{ uri: trip.cover_photo_url }} style={StyleSheet.absoluteFill} />
+        ) : (
+          <LinearGradient
+            colors={gradient}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         <View style={styles.heroNav}>
           <Pressable style={styles.roundBtn} onPress={() => safeBack('/viajes')}>
             <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
+          </Pressable>
+        </View>
+        <View style={styles.heroNavRight}>
+          <Pressable
+            style={styles.roundBtn}
+            onPress={() => router.push(`/editar-viaje?tripId=${trip.id}`)}
+          >
+            <Ionicons name="pencil" size={16} color="#FBF3EE" />
           </Pressable>
         </View>
         <View style={styles.heroShade} />
@@ -64,7 +103,7 @@ export default function ViajeDetail() {
           <Text style={styles.heroTitle}>{trip.title}</Text>
           {!!trip.destination_summary && <Text style={styles.heroSub}>{trip.destination_summary}</Text>}
         </View>
-      </LinearGradient>
+      </View>
 
       <View style={styles.subnav}>
         {(
@@ -83,20 +122,35 @@ export default function ViajeDetail() {
       </View>
 
       <View style={styles.panel}>
-        {tab === 'recuerdos' &&
-          (moments.length === 0 ? (
-            <Text style={styles.emptyText}>Todavía no hay momentos guardados en este viaje.</Text>
-          ) : (
-            moments.map((m) => (
-              <Pressable key={m.id} style={styles.momentCard} onPress={() => router.push(`/momento/${m.id}`)}>
-                <View style={styles.momentThumb} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.momentTitle}>{m.title}</Text>
-                  {!!m.place_name && <Text style={styles.momentSub}>{m.place_name}</Text>}
-                </View>
-              </Pressable>
-            ))
-          ))}
+        {tab === 'recuerdos' && (
+          <>
+            <Pressable
+              style={styles.addMomentBtn}
+              onPress={() => router.push(`/crear-recuerdo?tripId=${trip.id}`)}
+            >
+              <Ionicons name="add" size={18} color={colors.background} />
+              <Text style={styles.addMomentBtnText}>Nuevo recuerdo</Text>
+            </Pressable>
+
+            {moments.length === 0 ? (
+              <Text style={styles.emptyText}>Todavía no hay momentos guardados en este viaje.</Text>
+            ) : (
+              moments.map((m) => (
+                <Pressable key={m.id} style={styles.momentCard} onPress={() => router.push(`/momento/${m.id}`)}>
+                  {momentPhotos[m.id] ? (
+                    <Image source={{ uri: momentPhotos[m.id] }} style={styles.momentThumb} />
+                  ) : (
+                    <View style={styles.momentThumb} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.momentTitle}>{m.title}</Text>
+                    {!!m.place_name && <Text style={styles.momentSub}>{m.place_name}</Text>}
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </>
+        )}
 
         {tab === 'mapa' &&
           (moments.filter((m) => m.lat && m.lng).length === 0 ? (
@@ -142,8 +196,9 @@ export default function ViajeDetail() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  hero: { height: 300 },
+  hero: { height: 300, position: 'relative', overflow: 'hidden', backgroundColor: colors.sandDark },
   heroNav: { position: 'absolute', top: 54, left: 16, zIndex: 2 },
+  heroNavRight: { position: 'absolute', top: 54, right: 16, zIndex: 2 },
   roundBtn: {
     width: 38,
     height: 38,
@@ -170,6 +225,17 @@ const styles = StyleSheet.create({
   navtabUnderline: { height: 2, width: '60%', backgroundColor: colors.sage, marginTop: 8, borderRadius: 2 },
   panel: { padding: spacing.lg, paddingBottom: 80, gap: spacing.md },
   emptyText: { fontFamily: fonts.sans, color: colors.ink55, fontSize: 14, lineHeight: 20 },
+  addMomentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.ink,
+    borderRadius: radii.pill,
+    paddingVertical: 12,
+    marginBottom: spacing.xs,
+  },
+  addMomentBtnText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 14 },
   momentCard: {
     flexDirection: 'row',
     gap: spacing.md,

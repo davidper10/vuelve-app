@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
@@ -22,12 +22,16 @@ export function TripCard({ trip, size = 'md' }: { trip: Trip; size?: 'md' | 'lg'
       onPress={() => router.push(`/viaje/${trip.id}`)}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]}
     >
-      <LinearGradient
-        colors={gradient}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={[styles.cover, { height }]}
-      />
+      {trip.cover_photo_url ? (
+        <Image source={{ uri: trip.cover_photo_url }} style={[styles.cover, { height }]} />
+      ) : (
+        <LinearGradient
+          colors={gradient}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={[styles.cover, { height }]}
+        />
+      )}
       <View style={styles.body}>
         <Text style={styles.title}>{trip.title}</Text>
         <Text style={styles.meta}>{formatRange(trip.start_date, trip.end_date)}</Text>

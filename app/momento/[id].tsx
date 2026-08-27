@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
@@ -12,11 +12,17 @@ type Moment = Tables<'moments'>;
 export default function MomentoDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [moment, setMoment] = useState<Moment | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
-    const { data } = await supabase.from('moments').select('*').eq('id', id).single();
+    const [{ data }, { data: links }] = await Promise.all([
+      supabase.from('moments').select('*').eq('id', id).single(),
+      supabase.from('moment_memories').select('memories(storage_path)').eq('moment_id', id),
+    ]);
     setMoment(data);
+    const path = (links?.[0]?.memories as { storage_path: string } | null)?.storage_path;
+    setPhotoUrl(path ? supabase.storage.from('memories').getPublicUrl(path).data.publicUrl : null);
   }, [id]);
 
   useEffect(() => {
@@ -47,7 +53,11 @@ export default function MomentoDetail() {
         >
           <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
         </Pressable>
-        <View style={styles.big} />
+        {photoUrl ? (
+          <Image source={{ uri: photoUrl }} style={styles.big} />
+        ) : (
+          <View style={styles.big} />
+        )}
       </View>
 
       <View style={styles.body}>

@@ -64,6 +64,12 @@
           "selectIdentifiers": [],
           "systemCodes": []
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Vuelve usa tus fotos para añadirlas a los recuerdos de tus viajes."
+        }
       ]
     ],
     "experiments": {
