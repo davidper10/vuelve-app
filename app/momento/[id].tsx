@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { safeBack } from '@/lib/navigation';
 import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
@@ -40,7 +41,10 @@ export default function MomentoDetail() {
   return (
     <ScrollView style={styles.screen}>
       <View style={styles.collage}>
-        <Pressable style={styles.roundBtn} onPress={() => router.back()}>
+        <Pressable
+          style={styles.roundBtn}
+          onPress={() => safeBack(moment.trip_id ? `/viaje/${moment.trip_id}` : '/viajes')}
+        >
           <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
         </Pressable>
         <View style={styles.big} />

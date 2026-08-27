@@ -6,6 +6,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useTrips } from '@/lib/use-trips';
+import { safeBack } from '@/lib/navigation';
 
 type Step = 'checking' | 'unsupported' | 'scan' | 'found' | 'save';
 
@@ -108,7 +109,7 @@ export default function VincularNfc() {
           <Text style={{ fontFamily: fonts.sansBold }}>run:android</Text> (o un build de EAS) para
           probar esta pantalla en un dispositivo real con NFC.
         </Text>
-        <Pressable style={styles.cancel} onPress={() => router.back()}>
+        <Pressable style={styles.cancel} onPress={() => safeBack('/nfc')}>
           <Text style={styles.cancelText}>Volver</Text>
         </Pressable>
       </View>

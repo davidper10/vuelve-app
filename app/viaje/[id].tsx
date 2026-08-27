@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { safeBack } from '@/lib/navigation';
 import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
@@ -54,7 +55,7 @@ export default function ViajeDetail() {
     <ScrollView style={styles.screen} showsVerticalScrollIndicator={false}>
       <LinearGradient colors={gradient} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.hero}>
         <View style={styles.heroNav}>
-          <Pressable style={styles.roundBtn} onPress={() => router.back()}>
+          <Pressable style={styles.roundBtn} onPress={() => safeBack('/viajes')}>
             <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
           </Pressable>
         </View>

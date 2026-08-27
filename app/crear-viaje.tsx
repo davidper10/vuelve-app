@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { safeBack } from '@/lib/navigation';
 
 export default function CrearViaje() {
   const { session } = useAuth();
@@ -67,7 +68,7 @@ export default function CrearViaje() {
         <Text style={styles.buttonText}>{submitting ? 'Creando…' : 'Crear viaje'}</Text>
       </Pressable>
 
-      <Pressable style={styles.cancel} onPress={() => router.back()}>
+      <Pressable style={styles.cancel} onPress={() => safeBack('/viajes')}>
         <Text style={styles.cancelText}>Cancelar</Text>
       </Pressable>
     </ScrollView>
