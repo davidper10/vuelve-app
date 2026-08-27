@@ -1,0 +1,15 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.p12
+*.pem
+*.keystore
+*.jks
+.env
+.env.local
+*.log
+.DS_Store
+ios/
+android/
+expo-env.d.ts
