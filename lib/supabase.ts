@@ -14,11 +14,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // AsyncStorage guarda la sesión en el dispositivo para que el usuario
 // no tenga que volver a iniciar sesión cada vez que abre la app.
+// En el prerenderizado estático de la web (Node, sin `window`) se
+// desactiva la persistencia para no romper el SSR.
+const isBrowser = typeof window !== 'undefined';
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
+    storage: isBrowser ? AsyncStorage : undefined,
+    autoRefreshToken: isBrowser,
+    persistSession: isBrowser,
     detectSessionInUrl: false,
   },
 });
