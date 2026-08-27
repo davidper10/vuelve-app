@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "vuelve",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.vuelveapp.mobile",
@@ -20,7 +19,6 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png",
         "backgroundColor": "#68775C"
       },
-      "edgeToEdgeEnabled": true,
       "intentFilters": [
         {
           "action": "VIEW",
