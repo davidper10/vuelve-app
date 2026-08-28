@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -32,9 +32,11 @@ export default function MomentoDetail() {
     setPhotoUrls(urls);
   }, [id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const toggleFavorite = async () => {
     if (!moment) return;
@@ -54,12 +56,22 @@ export default function MomentoDetail() {
   return (
     <ScrollView style={styles.screen}>
       <View style={styles.collage}>
-        <Pressable
-          style={styles.roundBtn}
-          onPress={() => safeBack(moment.trip_id ? `/viaje/${moment.trip_id}` : '/viajes')}
-        >
-          <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
-        </Pressable>
+        <View style={styles.topLeft}>
+          <Pressable
+            style={styles.roundBtn}
+            onPress={() => safeBack(moment.trip_id ? `/viaje/${moment.trip_id}` : '/viajes')}
+          >
+            <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
+          </Pressable>
+        </View>
+        <View style={styles.topRight}>
+          <Pressable style={styles.roundBtn} onPress={toggleFavorite}>
+            <Ionicons name={moment.is_favorite ? 'heart' : 'heart-outline'} size={18} color="#FBF3EE" />
+          </Pressable>
+          <Pressable style={styles.roundBtn} onPress={() => router.push(`/editar-recuerdo?momentId=${moment.id}`)}>
+            <Ionicons name="pencil" size={16} color="#FBF3EE" />
+          </Pressable>
+        </View>
         {photoUrls[0] ? (
           <Image source={{ uri: photoUrls[0] }} style={styles.big} />
         ) : (
@@ -131,18 +143,6 @@ export default function MomentoDetail() {
             )}
           </View>
         )}
-
-        <Pressable
-          style={[styles.favChip, moment.is_favorite && styles.favChipOn]}
-          onPress={toggleFavorite}
-        >
-          <Ionicons
-            name={moment.is_favorite ? 'heart' : 'heart-outline'}
-            size={16}
-            color={moment.is_favorite ? '#fff' : colors.sage}
-          />
-          <Text style={[styles.favChipText, moment.is_favorite && { color: '#fff' }]}>Favorito</Text>
-        </Pressable>
       </View>
     </ScrollView>
   );
@@ -151,11 +151,9 @@ export default function MomentoDetail() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   collage: { padding: spacing.md, position: 'relative' },
+  topLeft: { position: 'absolute', top: 40, left: 30, zIndex: 2 },
+  topRight: { position: 'absolute', top: 40, right: 30, zIndex: 2, flexDirection: 'row', gap: 10 },
   roundBtn: {
-    position: 'absolute',
-    top: 40,
-    left: 30,
-    zIndex: 2,
     width: 38,
     height: 38,
     borderRadius: 19,
@@ -227,18 +225,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  favChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    alignSelf: 'flex-start',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radii.pill,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-  },
-  favChipText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink },
-  favChipOn: { backgroundColor: colors.terracotta, borderColor: colors.terracotta },
 });
