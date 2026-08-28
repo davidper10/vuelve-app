@@ -6,7 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { safeBack } from '@/lib/navigation';
+import { flagForCountry } from '@/lib/flags';
 import { MomentsTimeline } from '@/components/MomentsTimeline';
+import { CollaboratorsRow } from '@/components/CollaboratorsRow';
 import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
@@ -16,19 +18,29 @@ type NfcTag = Tables<'nfc_tags'>;
 
 type Tab = 'recuerdos' | 'mapa' | 'diario' | 'nfc';
 
+function formatDateRange(start: string | null, end: string | null) {
+  if (!start) return null;
+  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+  const s = new Date(start);
+  if (!end) return s.toLocaleDateString('es-ES', opts);
+  const e = new Date(end);
+  return `${s.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} – ${e.toLocaleDateString('es-ES', opts)}`;
+}
+
 export default function ViajeDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [moments, setMoments] = useState<Moment[]>([]);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [nfcTags, setNfcTags] = useState<NfcTag[]>([]);
-  const [momentPhotos, setMomentPhotos] = useState<Record<string, string>>({});
+  const [momentPhotos, setMomentPhotos] = useState<Record<string, string[]>>({});
   const [memoriesCount, setMemoriesCount] = useState(0);
+  const [videosCount, setVideosCount] = useState(0);
   const [tab, setTab] = useState<Tab>('recuerdos');
 
   const load = useCallback(async () => {
     if (!id) return;
-    const [tripRes, momentsRes, diaryRes, nfcRes, memoriesRes] = await Promise.all([
+    const [tripRes, momentsRes, diaryRes, nfcRes, memoriesRes, videosRes] = await Promise.all([
       supabase.from('trips').select('*').eq('id', id).single(),
       supabase.from('moments').select('*').eq('trip_id', id).order('occurred_at', { ascending: true }),
       supabase
@@ -38,12 +50,18 @@ export default function ViajeDetail() {
         .order('entry_date', { ascending: true }),
       supabase.from('nfc_tags').select('*').eq('trip_id', id),
       supabase.from('memories').select('id', { count: 'exact', head: true }).eq('trip_id', id),
+      supabase
+        .from('memories')
+        .select('id', { count: 'exact', head: true })
+        .eq('trip_id', id)
+        .eq('type', 'video'),
     ]);
     setTrip(tripRes.data ?? null);
     setMoments(momentsRes.data ?? []);
     setDiary((diaryRes.data as DiaryEntry[]) ?? []);
     setNfcTags(nfcRes.data ?? []);
     setMemoriesCount(memoriesRes.count ?? 0);
+    setVideosCount(videosRes.count ?? 0);
 
     const momentIds = (momentsRes.data ?? []).map((m) => m.id);
     if (momentIds.length > 0) {
@@ -51,11 +69,12 @@ export default function ViajeDetail() {
         .from('moment_memories')
         .select('moment_id, memories(storage_path)')
         .in('moment_id', momentIds);
-      const photos: Record<string, string> = {};
+      const photos: Record<string, string[]> = {};
       for (const link of links ?? []) {
         const path = (link.memories as { storage_path: string } | null)?.storage_path;
-        if (path && !photos[link.moment_id]) {
-          photos[link.moment_id] = supabase.storage.from('memories').getPublicUrl(path).data.publicUrl;
+        if (path) {
+          const url = supabase.storage.from('memories').getPublicUrl(path).data.publicUrl;
+          (photos[link.moment_id] ??= []).push(url);
         }
       }
       setMomentPhotos(photos);
@@ -80,6 +99,8 @@ export default function ViajeDetail() {
 
   const gradient = gradientFor(trip.title);
   const placesCount = new Set(moments.map((m) => m.place_name).filter(Boolean)).size;
+  const dateRange = formatDateRange(trip.start_date, trip.end_date);
+  const flag = flagForCountry(trip.country);
 
   return (
     <View style={styles.screen}>
@@ -120,6 +141,12 @@ export default function ViajeDetail() {
             style={styles.heroShade}
           />
           <View style={styles.heroContent}>
+            {!!dateRange && (
+              <Text style={styles.heroDate}>
+                {!!flag && `${flag} `}
+                {dateRange}
+              </Text>
+            )}
             <Text style={styles.heroTitle}>{trip.title}</Text>
             {!!trip.destination_summary && <Text style={styles.heroSub}>{trip.destination_summary}</Text>}
             <View style={styles.heroStats}>
@@ -128,11 +155,17 @@ export default function ViajeDetail() {
               </Text>
               <Text style={styles.heroStatDot}>•</Text>
               <Text style={styles.heroStatText}>
+                <Text style={styles.heroStatNumber}>{videosCount}</Text> vídeos
+              </Text>
+              <Text style={styles.heroStatDot}>•</Text>
+              <Text style={styles.heroStatText}>
                 <Text style={styles.heroStatNumber}>{placesCount}</Text> lugares
               </Text>
             </View>
           </View>
         </View>
+
+        <CollaboratorsRow tripId={trip.id} ownerId={trip.owner_id} />
 
         <View style={styles.subnav}>
           {(
@@ -264,6 +297,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   heroContent: { position: 'absolute', left: 22, right: 22, bottom: 20 },
+  heroDate: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: 'rgba(255,255,255,0.9)', marginBottom: 2 },
   heroTitle: { fontFamily: fonts.serif, fontSize: 40, color: '#FBF3EE' },
   heroSub: { fontFamily: fonts.sansMedium, fontSize: 13.5, color: '#FBF3EE', opacity: 0.85, marginTop: 4 },
   heroStats: {

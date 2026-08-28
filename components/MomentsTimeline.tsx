@@ -5,22 +5,9 @@ import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
 
-function dayKey(iso: string | null) {
-  return iso ? iso.slice(0, 10) : 'sin-fecha';
-}
-
-function formatDayHeader(key: string) {
-  if (key === 'sin-fecha') return 'Sin fecha';
-  const label = new Date(`${key}T00:00:00`).toLocaleDateString('es-ES', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+function formatDayShort(iso: string | null) {
+  if (!iso) return 'Sin fecha';
+  return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
 }
 
 export function MomentsTimeline({
@@ -29,102 +16,87 @@ export function MomentsTimeline({
   onPressMoment,
 }: {
   moments: Moment[];
-  photos: Record<string, string>;
+  photos: Record<string, string[]>;
   onPressMoment: (id: string) => void;
 }) {
-  const groups: { key: string; items: Moment[] }[] = [];
-  for (const m of moments) {
-    const key = dayKey(m.occurred_at);
-    const current = groups[groups.length - 1];
-    if (current && current.key === key) {
-      current.items.push(m);
-    } else {
-      groups.push({ key, items: [m] });
-    }
-  }
-
   return (
     <View>
-      {groups.map((group, gi) => (
-        <View key={group.key} style={styles.dayGroup}>
-          <View style={styles.dayHeaderRow}>
-            <Text style={styles.dayHeader}>{formatDayHeader(group.key)}</Text>
-            <View style={styles.dayHeaderLine} />
-          </View>
+      {moments.map((m, i) => {
+        const isLast = i === moments.length - 1;
+        const momentPhotos = photos[m.id] ?? [];
+        const isFav = m.is_favorite;
 
-          {group.items.map((m, i) => {
-            const isLastRow = gi === groups.length - 1 && i === group.items.length - 1;
-            return (
-              <Pressable key={m.id} style={styles.row} onPress={() => onPressMoment(m.id)}>
-                <View style={styles.rail}>
-                  <View style={[styles.dot, m.is_favorite && styles.dotFav]} />
-                  {!isLastRow && <View style={styles.railLine} />}
-                </View>
+        return (
+          <Pressable key={m.id} style={styles.row} onPress={() => onPressMoment(m.id)}>
+            <View style={styles.rail}>
+              <View style={[styles.dot, isFav && styles.dotFav]} />
+              {!isLast && <View style={styles.railLine} />}
+            </View>
 
-                <View style={styles.card}>
-                  <View style={styles.cardTopRow}>
-                    {!!photos[m.id] && <Image source={{ uri: photos[m.id] }} style={styles.thumb} />}
+            <View style={styles.content}>
+              <View style={styles.headerRow}>
+                <Text style={[styles.dayLabel, isFav && styles.dayLabelFav]}>
+                  {formatDayShort(m.occurred_at)}
+                  {isFav ? ' · Momento especial' : ''}
+                </Text>
+                {!!m.place_name && (
+                  <Text style={styles.headerPlace} numberOfLines={1}>
+                    {m.place_name}
+                  </Text>
+                )}
+              </View>
 
-                    <View style={styles.cardInfo}>
-                      <View style={styles.timeRow}>
-                        {!!m.occurred_at && <Text style={styles.time}>{formatTime(m.occurred_at)}</Text>}
-                        {m.is_favorite && (
-                          <View style={styles.favBadge}>
-                            <Text style={styles.favBadgeText}>Favorito</Text>
-                          </View>
-                        )}
-                      </View>
-
-                      <Text style={styles.cardTitle} numberOfLines={1}>
-                        {m.title}
-                      </Text>
-
-                      {!!m.place_name && (
-                        <View style={styles.metaRow}>
-                          <Ionicons name="location-outline" size={13} color={colors.sage} />
-                          <Text style={styles.metaText} numberOfLines={1}>
-                            {m.place_name}
-                          </Text>
-                        </View>
-                      )}
+              {isFav ? (
+                <View style={styles.featuredCard}>
+                  <View style={styles.featuredTopRow}>
+                    <Text style={styles.featuredTitle} numberOfLines={1}>
+                      {m.title}
+                    </Text>
+                    <View style={styles.favBadge}>
+                      <Text style={styles.favBadgeText}>Favorito</Text>
                     </View>
                   </View>
 
-                  {!!m.story && (
-                    <Text style={styles.story} numberOfLines={2}>
-                      {m.story}
-                    </Text>
-                  )}
-
-                  {!!m.song_title && (
-                    <View style={styles.songChip}>
-                      <Ionicons name="musical-notes-outline" size={12} color={colors.sage} />
-                      <Text style={styles.songChipText} numberOfLines={1}>
-                        {m.song_title}
+                  {!!m.place_name && (
+                    <View style={styles.locationRow}>
+                      <Ionicons name="location-outline" size={12} color={colors.sage} />
+                      <Text style={styles.locationText} numberOfLines={1}>
+                        {m.place_name}
                       </Text>
                     </View>
                   )}
+
+                  {!!momentPhotos[0] && <Image source={{ uri: momentPhotos[0] }} style={styles.featuredPhoto} />}
+
+                  {!!m.story && (
+                    <Text style={styles.quote} numberOfLines={2}>
+                      "{m.story}"
+                    </Text>
+                  )}
                 </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      ))}
+              ) : (
+                <View style={styles.card}>
+                  <Text style={styles.caption} numberOfLines={2}>
+                    {m.title}
+                  </Text>
+                  {momentPhotos.length > 0 && (
+                    <View style={styles.photoGrid}>
+                      {momentPhotos.slice(0, 3).map((url) => (
+                        <Image key={url} source={{ uri: url }} style={styles.gridImg} />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  dayGroup: { marginBottom: spacing.sm },
-  dayHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.sm },
-  dayHeader: {
-    fontFamily: fonts.sansBold,
-    fontSize: 12,
-    color: colors.sage,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  dayHeaderLine: { flex: 1, height: 1, backgroundColor: colors.line },
   row: { flexDirection: 'row' },
   rail: { width: 24, alignItems: 'center' },
   dot: {
@@ -134,48 +106,52 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 2,
     borderColor: colors.sage,
-    marginTop: 6,
+    marginTop: 4,
   },
   dotFav: { backgroundColor: colors.terracotta, borderColor: colors.terracotta },
   railLine: { flex: 1, width: 2, backgroundColor: colors.line, marginTop: 4, marginBottom: -spacing.lg },
+  content: { flex: 1, marginLeft: 4, marginBottom: spacing.lg },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8, gap: 8 },
+  dayLabel: {
+    fontFamily: fonts.sansBold,
+    fontSize: 11.5,
+    color: colors.sage,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  dayLabelFav: { color: colors.terracotta },
+  headerPlace: { fontFamily: fonts.sans, fontSize: 11, color: colors.ink38, flexShrink: 1, textAlign: 'right' },
   card: {
-    flex: 1,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radii.md,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-    marginLeft: 4,
+    padding: spacing.sm,
+    gap: 8,
   },
-  cardTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  thumb: { width: 56, height: 56, borderRadius: radii.sm, backgroundColor: colors.sandDark },
-  cardInfo: { flex: 1 },
-  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
-  time: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: colors.ink38 },
+  caption: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: colors.ink },
+  photoGrid: { flexDirection: 'row', gap: 5, borderRadius: radii.sm, overflow: 'hidden' },
+  gridImg: { flex: 1, height: 78, backgroundColor: colors.sandDark },
+  featuredCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    gap: 8,
+  },
+  featuredTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  featuredTitle: { fontFamily: fonts.serif, fontSize: 19, color: colors.ink, flex: 1 },
   favBadge: { backgroundColor: colors.terracottaLight, borderRadius: radii.pill, paddingVertical: 3, paddingHorizontal: 9 },
   favBadgeText: { fontFamily: fonts.sansBold, fontSize: 9.5, color: colors.terracotta },
-  cardTitle: { fontFamily: fonts.serif, fontSize: 19, color: colors.ink },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
-  metaText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.ink55 },
-  story: {
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  locationText: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.ink55 },
+  featuredPhoto: { width: '100%', height: 170, borderRadius: radii.md, backgroundColor: colors.sandDark },
+  quote: {
     fontFamily: fonts.serifItalic,
     fontStyle: 'italic',
-    fontSize: 14.5,
-    lineHeight: 20,
+    fontSize: 13.5,
+    lineHeight: 19,
     color: colors.ink70,
-    marginTop: 8,
   },
-  songChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: colors.sand,
-    borderRadius: radii.pill,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    marginTop: 10,
-  },
-  songChipText: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: colors.ink70, maxWidth: 180 },
 });
