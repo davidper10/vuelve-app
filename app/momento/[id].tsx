@@ -84,19 +84,6 @@ export default function MomentoDetail() {
         )}
       </View>
 
-      {photoUrls.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.gallery}
-          contentContainerStyle={styles.galleryContent}
-        >
-          {photoUrls.slice(1).map((url) => (
-            <Image key={url} source={{ uri: url }} style={styles.galleryImage} />
-          ))}
-        </ScrollView>
-      )}
-
       <View style={styles.body}>
         {!!moment.occurred_at && (
           <Text style={styles.metaLine}>
@@ -143,6 +130,19 @@ export default function MomentoDetail() {
             )}
           </View>
         )}
+
+        {photoUrls.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.gallery}
+            contentContainerStyle={styles.galleryContent}
+          >
+            {photoUrls.slice(1).map((url) => (
+              <Image key={url} source={{ uri: url }} style={styles.galleryImage} />
+            ))}
+          </ScrollView>
+        )}
       </View>
     </ScrollView>
   );
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   photoCountText: { fontFamily: fonts.sansSemiBold, fontSize: 10.5, color: '#fff' },
-  gallery: { marginTop: spacing.sm },
+  gallery: { marginTop: spacing.sm, marginHorizontal: -spacing.xl },
   galleryContent: { paddingHorizontal: spacing.xl, gap: 10 },
   galleryImage: { width: 96, height: 96, borderRadius: radii.md, backgroundColor: colors.sandDark },
   body: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl, paddingTop: spacing.md },
