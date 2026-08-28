@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
@@ -65,6 +65,11 @@ export default function MomentoDetail() {
         ) : (
           <View style={styles.big} />
         )}
+        {photoUrls.length > 0 && (
+          <View style={styles.photoCountBadge}>
+            <Text style={styles.photoCountText}>1 / {photoUrls.length} fotografías</Text>
+          </View>
+        )}
       </View>
 
       {photoUrls.length > 1 && (
@@ -81,48 +86,63 @@ export default function MomentoDetail() {
       )}
 
       <View style={styles.body}>
-        {!!moment.place_name && (
-          <View style={styles.metaRow}>
-            <Ionicons name="location-outline" size={15} color={colors.terracotta} />
-            <Text style={styles.metaText}>{moment.place_name}</Text>
-          </View>
-        )}
         {!!moment.occurred_at && (
-          <View style={styles.metaRow}>
-            <Ionicons name="calendar-outline" size={15} color={colors.terracotta} />
-            <Text style={styles.metaText}>
-              {new Date(moment.occurred_at).toLocaleString('es-ES', {
-                day: 'numeric',
-                month: 'long',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
-          </View>
+          <Text style={styles.metaLine}>
+            {new Date(moment.occurred_at).toLocaleString('es-ES', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
         )}
 
         <Text style={styles.title}>{moment.title}</Text>
-        {!!moment.story && <Text style={styles.story}>"{moment.story}"</Text>}
 
-        <View style={styles.chips}>
-          {!!moment.song_title && (
-            <View style={styles.chip}>
-              <Ionicons name="musical-notes-outline" size={16} color={colors.sage} />
-              <Text style={styles.chipText}>{moment.song_title}</Text>
+        {!!moment.place_name && (
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={13} color={colors.sage} />
+            <Text style={styles.locationText}>{moment.place_name}</Text>
+          </View>
+        )}
+
+        {!!moment.story && (
+          <View style={styles.quote}>
+            <Text style={styles.quoteText}>"{moment.story}"</Text>
+          </View>
+        )}
+
+        {!!moment.song_title && (
+          <View style={styles.songBar}>
+            <View style={styles.songIcon}>
+              <Ionicons name="musical-notes" size={16} color={colors.sage} />
             </View>
-          )}
-          <Pressable
-            style={[styles.chip, styles.favChip, moment.is_favorite && styles.favChipOn]}
-            onPress={toggleFavorite}
-          >
-            <Ionicons
-              name={moment.is_favorite ? 'heart' : 'heart-outline'}
-              size={16}
-              color={moment.is_favorite ? '#fff' : colors.sage}
-            />
-            <Text style={[styles.chipText, moment.is_favorite && { color: '#fff' }]}>Favorito</Text>
-          </Pressable>
-        </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.songLabel}>Canción del momento</Text>
+              <Text style={styles.songTitle} numberOfLines={1}>
+                {moment.song_title}
+              </Text>
+            </View>
+            {!!moment.song_url && (
+              <Pressable style={styles.playBtn} onPress={() => Linking.openURL(moment.song_url!)}>
+                <Ionicons name="play" size={13} color="#fff" />
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        <Pressable
+          style={[styles.favChip, moment.is_favorite && styles.favChipOn]}
+          onPress={toggleFavorite}
+        >
+          <Ionicons
+            name={moment.is_favorite ? 'heart' : 'heart-outline'}
+            size={16}
+            color={moment.is_favorite ? '#fff' : colors.sage}
+          />
+          <Text style={[styles.favChipText, moment.is_favorite && { color: '#fff' }]}>Favorito</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );
@@ -148,19 +168,70 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     backgroundColor: colors.sandDark,
   },
+  photoCountBadge: {
+    position: 'absolute',
+    left: spacing.md + 8,
+    bottom: 8,
+    backgroundColor: 'rgba(20,12,14,0.6)',
+    borderRadius: radii.pill,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+  },
+  photoCountText: { fontFamily: fonts.sansSemiBold, fontSize: 10.5, color: '#fff' },
   gallery: { marginTop: spacing.sm },
   galleryContent: { paddingHorizontal: spacing.xl, gap: 10 },
   galleryImage: { width: 96, height: 96, borderRadius: radii.md, backgroundColor: colors.sandDark },
   body: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl, paddingTop: spacing.md },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  metaText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink55 },
-  title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink, marginTop: spacing.sm, marginBottom: spacing.md },
-  story: { fontFamily: fonts.serifItalic, fontStyle: 'italic', fontSize: 19, lineHeight: 27, color: colors.ink70, marginBottom: spacing.lg },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip: {
+  metaLine: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink55, marginBottom: 4 },
+  title: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5, marginBottom: spacing.md },
+  locationText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.sage },
+  quote: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.terracotta,
+    borderTopRightRadius: radii.md,
+    borderBottomRightRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  quoteText: { fontFamily: fonts.serifItalic, fontStyle: 'italic', fontSize: 16, lineHeight: 23, color: colors.ink },
+  songBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radii.lg,
+    padding: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  songIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.sm,
+    backgroundColor: colors.sageLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  songLabel: { fontFamily: fonts.sansBold, fontSize: 12, color: colors.ink },
+  songTitle: { fontFamily: fonts.sans, fontSize: 11, color: colors.ink55, marginTop: 1 },
+  playBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.terracotta,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  favChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    alignSelf: 'flex-start',
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.line,
@@ -168,7 +239,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 15,
   },
-  chipText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink },
-  favChip: {},
+  favChipText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink },
   favChipOn: { backgroundColor: colors.terracotta, borderColor: colors.terracotta },
 });

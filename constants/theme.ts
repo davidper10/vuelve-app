@@ -9,7 +9,10 @@ export const colors = {
   ink55: 'rgba(23,23,23,0.55)',
   ink38: 'rgba(23,23,23,0.38)',
   sage: '#68775C',
+  sageDark: '#54624A',
+  sageLight: '#EBF0E8',
   terracotta: '#C87554',
+  terracottaLight: '#FDF1EC',
   sand: '#EAE2D6',
   sandDark: '#DED2BF',
   line: 'rgba(23,23,23,0.09)',
@@ -18,13 +21,12 @@ export const colors = {
 
 // Familias registradas por useFonts() en app/_layout.tsx.
 export const fonts = {
-  serif: 'InstrumentSerif_400Regular',
-  serifItalic: 'InstrumentSerif_400Regular_Italic',
-  sans: 'Manrope_400Regular',
-  sansMedium: 'Manrope_500Medium',
-  sansSemiBold: 'Manrope_600SemiBold',
-  sansBold: 'Manrope_700Bold',
-  sansExtraBold: 'Manrope_800ExtraBold',
+  serif: 'DMSerifDisplay_400Regular',
+  serifItalic: 'DMSerifDisplay_400Regular_Italic',
+  sans: 'Inter_400Regular',
+  sansMedium: 'Inter_500Medium',
+  sansSemiBold: 'Inter_600SemiBold',
+  sansBold: 'Inter_700Bold',
 } as const;
 
 export const radii = {

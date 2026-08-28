@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
 type Moment = Tables<'moments'>;
-type DiaryEntry = Tables<'diary_entries'>;
+type DiaryEntry = Tables<'diary_entries'> & { profiles: { full_name: string | null } | null };
 type NfcTag = Tables<'nfc_tags'>;
 
 type Tab = 'recuerdos' | 'mapa' | 'diario' | 'nfc';
@@ -23,20 +23,27 @@ export default function ViajeDetail() {
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [nfcTags, setNfcTags] = useState<NfcTag[]>([]);
   const [momentPhotos, setMomentPhotos] = useState<Record<string, string>>({});
+  const [memoriesCount, setMemoriesCount] = useState(0);
   const [tab, setTab] = useState<Tab>('recuerdos');
 
   const load = useCallback(async () => {
     if (!id) return;
-    const [tripRes, momentsRes, diaryRes, nfcRes] = await Promise.all([
+    const [tripRes, momentsRes, diaryRes, nfcRes, memoriesRes] = await Promise.all([
       supabase.from('trips').select('*').eq('id', id).single(),
       supabase.from('moments').select('*').eq('trip_id', id).order('occurred_at', { ascending: true }),
-      supabase.from('diary_entries').select('*').eq('trip_id', id).order('entry_date', { ascending: true }),
+      supabase
+        .from('diary_entries')
+        .select('*, profiles(full_name)')
+        .eq('trip_id', id)
+        .order('entry_date', { ascending: true }),
       supabase.from('nfc_tags').select('*').eq('trip_id', id),
+      supabase.from('memories').select('id', { count: 'exact', head: true }).eq('trip_id', id),
     ]);
     setTrip(tripRes.data ?? null);
     setMoments(momentsRes.data ?? []);
-    setDiary(diaryRes.data ?? []);
+    setDiary((diaryRes.data as DiaryEntry[]) ?? []);
     setNfcTags(nfcRes.data ?? []);
+    setMemoriesCount(memoriesRes.count ?? 0);
 
     const momentIds = (momentsRes.data ?? []).map((m) => m.id);
     if (momentIds.length > 0) {
@@ -72,6 +79,7 @@ export default function ViajeDetail() {
   }
 
   const gradient = gradientFor(trip.title);
+  const placesCount = new Set(moments.map((m) => m.place_name).filter(Boolean)).size;
 
   return (
     <View style={styles.screen}>
@@ -95,6 +103,12 @@ export default function ViajeDetail() {
           <View style={styles.heroNavRight}>
             <Pressable
               style={styles.roundBtn}
+              onPress={() => Alert.alert('Compartir', 'La opción de compartir viajes llegará pronto.')}
+            >
+              <Ionicons name="share-social-outline" size={16} color="#FBF3EE" />
+            </Pressable>
+            <Pressable
+              style={styles.roundBtn}
               onPress={() => router.push(`/editar-viaje?tripId=${trip.id}`)}
             >
               <Ionicons name="pencil" size={16} color="#FBF3EE" />
@@ -104,6 +118,15 @@ export default function ViajeDetail() {
           <View style={styles.heroContent}>
             <Text style={styles.heroTitle}>{trip.title}</Text>
             {!!trip.destination_summary && <Text style={styles.heroSub}>{trip.destination_summary}</Text>}
+            <View style={styles.heroStats}>
+              <Text style={styles.heroStatText}>
+                <Text style={styles.heroStatNumber}>{memoriesCount}</Text> fotos
+              </Text>
+              <Text style={styles.heroStatDot}>•</Text>
+              <Text style={styles.heroStatText}>
+                <Text style={styles.heroStatNumber}>{placesCount}</Text> lugares
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -135,43 +158,75 @@ export default function ViajeDetail() {
               />
             ))}
 
-          {tab === 'mapa' &&
-            (moments.filter((m) => m.lat && m.lng).length === 0 ? (
-              <Text style={styles.emptyText}>
-                Añade ubicación a tus momentos para verlos aquí en el mapa.
+          {tab === 'mapa' && (
+            <View style={styles.mapInfoCard}>
+              <Text style={styles.mapInfoText}>
+                {moments.filter((m) => m.lat && m.lng).length} lugares registrados
+                {!!trip.country && ` en ${trip.country}`}
               </Text>
-            ) : (
-              <Text style={styles.emptyText}>
-                {moments.filter((m) => m.lat && m.lng).length} lugares con ubicación guardada.{'\n'}
-                (Integra react-native-maps o expo-maps aquí para el mapa interactivo.)
-              </Text>
-            ))}
+              <View style={styles.mapInfoBadge}>
+                <Text style={styles.mapInfoBadgeText}>📍 {placesCount} lugares</Text>
+              </View>
+            </View>
+          )}
 
           {tab === 'diario' &&
             (diary.length === 0 ? (
               <Text style={styles.emptyText}>Todavía no hay entradas de diario.</Text>
             ) : (
-              diary.map((d) => (
+              diary.map((d, i) => (
                 <View key={d.id} style={styles.diaryEntry}>
-                  <Text style={styles.diaryDate}>
-                    {new Date(d.entry_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
-                  </Text>
+                  <Text style={styles.diaryEyebrow}>Nota de viaje #{i + 1}</Text>
                   <Text style={styles.diaryText}>{d.body}</Text>
+                  <View style={styles.diaryFooter}>
+                    <Text style={styles.diaryFooterText}>
+                      {d.profiles?.full_name ? `Escrito por ${d.profiles.full_name}` : ' '}
+                    </Text>
+                    <Text style={styles.diaryFooterText}>
+                      {new Date(d.entry_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </Text>
+                  </View>
                 </View>
               ))
             ))}
 
-          {tab === 'nfc' &&
-            (nfcTags.length === 0 ? (
-              <Text style={styles.emptyText}>Este viaje no tiene ningún NFC vinculado todavía.</Text>
-            ) : (
-              nfcTags.map((n) => (
-                <View key={n.id} style={styles.nfcCard}>
-                  <Text style={styles.momentTitle}>{n.label}</Text>
-                  <Text style={styles.momentSub}>{n.status === 'active' ? 'Vinculado y activo' : 'Inactivo'}</Text>
+          {tab === 'nfc' && (
+            <>
+              {nfcTags.length > 0 && (
+                <View style={styles.nfcExplainer}>
+                  <View style={styles.nfcExplainerTitleRow}>
+                    <Ionicons name="radio" size={13} color={colors.sageDark} />
+                    <Text style={styles.nfcExplainerTitle}>NFC vinculado a este viaje</Text>
+                  </View>
+                  <Text style={styles.nfcExplainerBody}>
+                    Cualquier persona que acerque su móvil al objeto físico accederá a este viaje.
+                  </Text>
                 </View>
-              ))
-            ))}
+              )}
+
+              {nfcTags.length === 0 ? (
+                <Text style={styles.emptyText}>Este viaje no tiene ningún NFC vinculado todavía.</Text>
+              ) : (
+                nfcTags.map((n) => (
+                  <View key={n.id} style={styles.nfcCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.momentTitle}>{n.label}</Text>
+                      <Text style={styles.momentSub}>ID: {n.tag_uid ?? n.public_slug}</Text>
+                    </View>
+                    <View
+                      style={[styles.statusPill, n.status === 'active' ? styles.statusPillActive : styles.statusPillInactive]}
+                    >
+                      <Text
+                        style={[styles.statusText, n.status === 'active' ? styles.statusTextActive : styles.statusTextInactive]}
+                      >
+                        {n.status === 'active' ? 'Activo' : 'Inactivo'}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -188,7 +243,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   hero: { height: 300, position: 'relative', overflow: 'hidden', backgroundColor: colors.sandDark },
   heroNav: { position: 'absolute', top: 54, left: 16, zIndex: 2 },
-  heroNavRight: { position: 'absolute', top: 54, right: 16, zIndex: 2 },
+  heroNavRight: { position: 'absolute', top: 54, right: 16, zIndex: 2, flexDirection: 'row', gap: 8 },
   roundBtn: {
     width: 38,
     height: 38,
@@ -208,6 +263,18 @@ const styles = StyleSheet.create({
   heroContent: { position: 'absolute', left: 22, right: 22, bottom: 20 },
   heroTitle: { fontFamily: fonts.serif, fontSize: 40, color: '#FBF3EE' },
   heroSub: { fontFamily: fonts.sansMedium, fontSize: 13.5, color: '#FBF3EE', opacity: 0.85, marginTop: 4 },
+  heroStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
+  },
+  heroStatText: { fontFamily: fonts.sans, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
+  heroStatNumber: { fontFamily: fonts.sansBold, color: '#FBF3EE' },
+  heroStatDot: { color: 'rgba(255,255,255,0.5)', fontSize: 12 },
   subnav: { flexDirection: 'row', paddingHorizontal: spacing.md, borderBottomWidth: 1, borderColor: colors.line },
   navtab: { flex: 1, alignItems: 'center', paddingVertical: 13 },
   navtabText: { fontFamily: fonts.sansBold, fontSize: 13.5, color: colors.ink38 },
@@ -233,15 +300,61 @@ const styles = StyleSheet.create({
   },
   momentTitle: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
   momentSub: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.ink55, marginTop: 2 },
-  diaryEntry: { borderBottomWidth: 1, borderColor: colors.line, paddingBottom: spacing.md },
-  diaryDate: {
+  mapInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+  },
+  mapInfoText: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.ink55, flex: 1 },
+  mapInfoBadge: { backgroundColor: colors.sageLight, borderRadius: radii.pill, paddingVertical: 5, paddingHorizontal: 10 },
+  mapInfoBadgeText: { fontFamily: fonts.sansBold, fontSize: 11.5, color: colors.sageDark },
+  diaryEntry: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    gap: 8,
+  },
+  diaryEyebrow: {
     fontFamily: fonts.sansBold,
-    fontSize: 12,
+    fontSize: 10.5,
     color: colors.sage,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 6,
   },
-  diaryText: { fontFamily: fonts.serifItalic, fontStyle: 'italic', fontSize: 18, color: colors.ink, lineHeight: 24 },
-  nfcCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: radii.md, padding: spacing.md },
+  diaryText: { fontFamily: fonts.sans, fontSize: 13.5, color: colors.ink70, lineHeight: 20 },
+  diaryFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+  },
+  diaryFooterText: { fontFamily: fonts.sans, fontSize: 11, color: colors.ink38 },
+  nfcExplainer: { backgroundColor: colors.sageLight, borderRadius: radii.lg, padding: spacing.md, gap: 6 },
+  nfcExplainerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  nfcExplainerTitle: { fontFamily: fonts.sansBold, fontSize: 12.5, color: colors.sageDark },
+  nfcExplainerBody: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.ink70, lineHeight: 16 },
+  nfcCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
+  statusPill: { borderRadius: radii.pill, paddingVertical: 4, paddingHorizontal: 10 },
+  statusPillActive: { backgroundColor: '#DCF3E3' },
+  statusPillInactive: { backgroundColor: colors.sand },
+  statusText: { fontFamily: fonts.sansBold, fontSize: 10.5 },
+  statusTextActive: { color: '#1E7A45' },
+  statusTextInactive: { color: colors.ink55 },
 });

@@ -68,7 +68,11 @@ export function MomentsTimeline({
                     <View style={styles.cardInfo}>
                       <View style={styles.timeRow}>
                         {!!m.occurred_at && <Text style={styles.time}>{formatTime(m.occurred_at)}</Text>}
-                        {m.is_favorite && <Ionicons name="heart" size={13} color={colors.terracotta} />}
+                        {m.is_favorite && (
+                          <View style={styles.favBadge}>
+                            <Text style={styles.favBadgeText}>Favorito</Text>
+                          </View>
+                        )}
                       </View>
 
                       <Text style={styles.cardTitle} numberOfLines={1}>
@@ -149,6 +153,8 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1 },
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
   time: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: colors.ink38 },
+  favBadge: { backgroundColor: colors.terracottaLight, borderRadius: radii.pill, paddingVertical: 3, paddingHorizontal: 9 },
+  favBadgeText: { fontFamily: fonts.sansBold, fontSize: 9.5, color: colors.terracotta },
   cardTitle: { fontFamily: fonts.serif, fontSize: 19, color: colors.ink },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
   metaText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.ink55 },

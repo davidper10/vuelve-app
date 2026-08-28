@@ -1,7 +1,16 @@
-import { Redirect, Tabs } from 'expo-router';
+import { Pressable, StyleSheet } from 'react-native';
+import { Redirect, router, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth-context';
 import { colors, fonts } from '@/constants/theme';
+
+function CenterAddButton() {
+  return (
+    <Pressable style={styles.centerBtn} onPress={() => router.push('/crear-viaje')}>
+      <Ionicons name="add" size={24} color={colors.background} />
+    </Pressable>
+  );
+}
 
 export default function TabsLayout() {
   const { session, loading } = useAuth();
@@ -39,6 +48,19 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="crear"
+        options={{
+          title: '',
+          tabBarButton: () => <CenterAddButton />,
+        }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push('/crear-viaje');
+          },
+        }}
+      />
+      <Tabs.Screen
         name="nfc"
         options={{
           title: 'NFC',
@@ -55,3 +77,23 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  centerBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginTop: -20,
+    backgroundColor: colors.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: colors.background,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+    alignSelf: 'center',
+  },
+});
