@@ -114,7 +114,11 @@ export default function ViajeDetail() {
               <Ionicons name="pencil" size={16} color="#FBF3EE" />
             </Pressable>
           </View>
-          <View style={styles.heroShade} />
+          <LinearGradient
+            colors={['transparent', 'rgba(10,6,7,0.15)', 'rgba(10,6,7,0.9)']}
+            locations={[0, 0.4, 1]}
+            style={styles.heroShade}
+          />
           <View style={styles.heroContent}>
             <Text style={styles.heroTitle}>{trip.title}</Text>
             {!!trip.destination_summary && <Text style={styles.heroSub}>{trip.destination_summary}</Text>}
@@ -258,7 +262,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(20,12,14,0.35)',
   },
   heroContent: { position: 'absolute', left: 22, right: 22, bottom: 20 },
   heroTitle: { fontFamily: fonts.serif, fontSize: 40, color: '#FBF3EE' },

@@ -30,7 +30,11 @@ export function FeaturedTripCard({ trip, momentsCount }: { trip: Trip; momentsCo
       ) : (
         <LinearGradient colors={gradient} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.cover} />
       )}
-      <View style={styles.shade} />
+      <LinearGradient
+        colors={['transparent', 'rgba(10,6,7,0.15)', 'rgba(10,6,7,0.92)']}
+        locations={[0, 0.45, 1]}
+        style={styles.shade}
+      />
 
       <View style={styles.content}>
         <View style={styles.badges}>
@@ -77,7 +81,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(20,12,14,0.15)',
   },
   content: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg },
   badges: { flexDirection: 'row', gap: 8, marginBottom: spacing.sm },
