@@ -76,16 +76,24 @@ export function MomentsTimeline({
                 </View>
               ) : (
                 <View style={styles.card}>
-                  <Text style={styles.caption} numberOfLines={2}>
-                    {m.title}
-                  </Text>
-                  {momentPhotos.length > 0 && (
-                    <View style={styles.photoGrid}>
-                      {momentPhotos.slice(0, 3).map((url) => (
-                        <Image key={url} source={{ uri: url }} style={styles.gridImg} />
-                      ))}
-                    </View>
+                  {momentPhotos[0] ? (
+                    <Image source={{ uri: momentPhotos[0] }} style={styles.thumb} />
+                  ) : (
+                    <View style={styles.thumb} />
                   )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {m.title}
+                    </Text>
+                    {!!m.place_name && (
+                      <View style={styles.locationRow}>
+                        <Ionicons name="location-outline" size={12} color={colors.sage} />
+                        <Text style={styles.locationText} numberOfLines={1}>
+                          {m.place_name}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
               )}
             </View>
@@ -122,16 +130,17 @@ const styles = StyleSheet.create({
   dayLabelFav: { color: colors.terracotta },
   headerPlace: { fontFamily: fonts.sans, fontSize: 11, color: colors.ink38, flexShrink: 1, textAlign: 'right' },
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radii.md,
     padding: spacing.sm,
-    gap: 8,
   },
-  caption: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: colors.ink },
-  photoGrid: { flexDirection: 'row', gap: 5, borderRadius: radii.sm, overflow: 'hidden' },
-  gridImg: { flex: 1, height: 78, backgroundColor: colors.sandDark },
+  thumb: { width: 56, height: 56, borderRadius: radii.sm, backgroundColor: colors.sandDark },
+  cardTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.ink },
   featuredCard: {
     backgroundColor: colors.card,
     borderWidth: 1,
