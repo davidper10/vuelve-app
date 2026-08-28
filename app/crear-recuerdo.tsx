@@ -15,11 +15,11 @@ export default function CrearRecuerdo() {
   const [story, setStory] = useState('');
   const [placeName, setPlaceName] = useState('');
   const [occurredAt, setOccurredAt] = useState(''); // YYYY-MM-DD
-  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const pickPhoto = async () => {
+  const pickPhotos = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       setError('Necesitamos permiso para acceder a tus fotos.');
@@ -28,10 +28,15 @@ export default function CrearRecuerdo() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.8,
+      allowsMultipleSelection: true,
     });
     if (!result.canceled) {
-      setPhoto(result.assets[0]);
+      setPhotos((prev) => [...prev, ...result.assets]);
     }
+  };
+
+  const removePhoto = (uri: string) => {
+    setPhotos((prev) => prev.filter((p) => p.uri !== uri));
   };
 
   const onCreate = async () => {
@@ -58,21 +63,20 @@ export default function CrearRecuerdo() {
       return;
     }
 
-    if (photo) {
+    let failedUploads = 0;
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
       const ext = photo.uri.split('.').pop()?.toLowerCase() || 'jpg';
       const contentType = photo.mimeType || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-      const path = `${tripId}/${moment.id}-${Date.now()}.${ext}`;
+      const path = `${tripId}/${moment.id}-${i}-${Date.now()}.${ext}`;
       const arrayBuffer = await fetch(photo.uri).then((res) => res.arrayBuffer());
 
       const { error: uploadErr } = await supabase.storage.from('memories').upload(path, arrayBuffer, {
         contentType,
       });
-
       if (uploadErr) {
-        setSubmitting(false);
-        setError(`El recuerdo se creó, pero la foto falló: ${uploadErr.message}`);
-        router.replace(`/momento/${moment.id}`);
-        return;
+        failedUploads++;
+        continue;
       }
 
       const { data: memory, error: memoryErr } = await supabase
@@ -90,10 +94,15 @@ export default function CrearRecuerdo() {
 
       if (!memoryErr && memory) {
         await supabase.from('moment_memories').insert({ moment_id: moment.id, memory_id: memory.id });
+      } else {
+        failedUploads++;
       }
     }
 
     setSubmitting(false);
+    if (failedUploads > 0) {
+      setError(`El recuerdo se creó, pero ${failedUploads} foto(s) no se pudieron subir.`);
+    }
     router.replace(`/momento/${moment.id}`);
   };
 
@@ -101,16 +110,37 @@ export default function CrearRecuerdo() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
       <Text style={styles.title}>Nuevo recuerdo</Text>
 
-      <Pressable style={styles.photoPicker} onPress={pickPhoto}>
-        {photo ? (
-          <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+      <Pressable style={styles.photoPicker} onPress={pickPhotos}>
+        {photos.length > 0 ? (
+          <Image source={{ uri: photos[0].uri }} style={styles.photoPreview} />
         ) : (
           <View style={styles.photoPlaceholder}>
             <Ionicons name="image-outline" size={26} color={colors.ink38} />
-            <Text style={styles.photoPlaceholderText}>Añadir foto</Text>
+            <Text style={styles.photoPlaceholderText}>Añadir portada y fotos</Text>
           </View>
         )}
       </Pressable>
+
+      {photos.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbStrip}>
+          {photos.map((p, i) => (
+            <View key={p.uri} style={styles.thumbWrap}>
+              <Image source={{ uri: p.uri }} style={styles.thumb} />
+              {i === 0 && (
+                <View style={styles.coverBadge}>
+                  <Text style={styles.coverBadgeText}>Portada</Text>
+                </View>
+              )}
+              <Pressable style={styles.removeThumb} onPress={() => removePhoto(p.uri)}>
+                <Ionicons name="close" size={12} color="#fff" />
+              </Pressable>
+            </View>
+          ))}
+          <Pressable style={styles.addThumb} onPress={pickPhotos}>
+            <Ionicons name="add" size={20} color={colors.ink55} />
+          </Pressable>
+        </ScrollView>
+      )}
 
       <Field label="Título" value={title} onChangeText={setTitle} placeholder="La cena en el mirador" />
       <Field
@@ -181,6 +211,41 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   photoPlaceholderText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink55 },
+  thumbStrip: { marginBottom: spacing.lg },
+  thumbWrap: { position: 'relative', marginRight: 10 },
+  thumb: { width: 64, height: 64, borderRadius: radii.sm, backgroundColor: colors.sandDark },
+  coverBadge: {
+    position: 'absolute',
+    left: 4,
+    bottom: 4,
+    backgroundColor: 'rgba(20,12,14,0.65)',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  coverBadgeText: { fontFamily: fonts.sansBold, fontSize: 8.5, color: '#fff' },
+  removeThumb: {
+    position: 'absolute',
+    top: -5,
+    right: 5,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.sm,
+    backgroundColor: colors.sand,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   field: { marginBottom: spacing.md },
   label: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.ink70, marginBottom: 6 },
   input: {

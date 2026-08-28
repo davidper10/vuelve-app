@@ -74,66 +74,58 @@ export default function ViajeDetail() {
   const gradient = gradientFor(trip.title);
 
   return (
-    <ScrollView style={styles.screen} showsVerticalScrollIndicator={false}>
-      <View style={styles.hero}>
-        {trip.cover_photo_url ? (
-          <Image source={{ uri: trip.cover_photo_url }} style={StyleSheet.absoluteFill} />
-        ) : (
-          <LinearGradient
-            colors={gradient}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-        )}
-        <View style={styles.heroNav}>
-          <Pressable style={styles.roundBtn} onPress={() => safeBack('/viajes')}>
-            <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
-          </Pressable>
-        </View>
-        <View style={styles.heroNavRight}>
-          <Pressable
-            style={styles.roundBtn}
-            onPress={() => router.push(`/editar-viaje?tripId=${trip.id}`)}
-          >
-            <Ionicons name="pencil" size={16} color="#FBF3EE" />
-          </Pressable>
-        </View>
-        <View style={styles.heroShade} />
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>{trip.title}</Text>
-          {!!trip.destination_summary && <Text style={styles.heroSub}>{trip.destination_summary}</Text>}
-        </View>
-      </View>
-
-      <View style={styles.subnav}>
-        {(
-          [
-            ['recuerdos', 'Recuerdos'],
-            ['mapa', 'Mapa'],
-            ['diario', 'Diario'],
-            ['nfc', 'NFC'],
-          ] as [Tab, string][]
-        ).map(([key, label]) => (
-          <Pressable key={key} style={styles.navtab} onPress={() => setTab(key)}>
-            <Text style={[styles.navtabText, tab === key && styles.navtabTextActive]}>{label}</Text>
-            {tab === key && <View style={styles.navtabUnderline} />}
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.panel}>
-        {tab === 'recuerdos' && (
-          <>
-            <Pressable
-              style={styles.addMomentBtn}
-              onPress={() => router.push(`/crear-recuerdo?tripId=${trip.id}`)}
-            >
-              <Ionicons name="add" size={18} color={colors.background} />
-              <Text style={styles.addMomentBtnText}>Nuevo recuerdo</Text>
+    <View style={styles.screen}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.hero}>
+          {trip.cover_photo_url ? (
+            <Image source={{ uri: trip.cover_photo_url }} style={StyleSheet.absoluteFill} />
+          ) : (
+            <LinearGradient
+              colors={gradient}
+              start={{ x: 0.1, y: 0 }}
+              end={{ x: 0.9, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
+          <View style={styles.heroNav}>
+            <Pressable style={styles.roundBtn} onPress={() => safeBack('/viajes')}>
+              <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
             </Pressable>
+          </View>
+          <View style={styles.heroNavRight}>
+            <Pressable
+              style={styles.roundBtn}
+              onPress={() => router.push(`/editar-viaje?tripId=${trip.id}`)}
+            >
+              <Ionicons name="pencil" size={16} color="#FBF3EE" />
+            </Pressable>
+          </View>
+          <View style={styles.heroShade} />
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>{trip.title}</Text>
+            {!!trip.destination_summary && <Text style={styles.heroSub}>{trip.destination_summary}</Text>}
+          </View>
+        </View>
 
-            {moments.length === 0 ? (
+        <View style={styles.subnav}>
+          {(
+            [
+              ['recuerdos', 'Recuerdos'],
+              ['mapa', 'Mapa'],
+              ['diario', 'Diario'],
+              ['nfc', 'NFC'],
+            ] as [Tab, string][]
+          ).map(([key, label]) => (
+            <Pressable key={key} style={styles.navtab} onPress={() => setTab(key)}>
+              <Text style={[styles.navtabText, tab === key && styles.navtabTextActive]}>{label}</Text>
+              {tab === key && <View style={styles.navtabUnderline} />}
+            </Pressable>
+          ))}
+        </View>
+
+        <View style={styles.panel}>
+          {tab === 'recuerdos' &&
+            (moments.length === 0 ? (
               <Text style={styles.emptyText}>Todavía no hay momentos guardados en este viaje.</Text>
             ) : (
               <MomentsTimeline
@@ -141,49 +133,54 @@ export default function ViajeDetail() {
                 photos={momentPhotos}
                 onPressMoment={(momentId) => router.push(`/momento/${momentId}`)}
               />
-            )}
-          </>
-        )}
+            ))}
 
-        {tab === 'mapa' &&
-          (moments.filter((m) => m.lat && m.lng).length === 0 ? (
-            <Text style={styles.emptyText}>
-              Añade ubicación a tus momentos para verlos aquí en el mapa.
-            </Text>
-          ) : (
-            <Text style={styles.emptyText}>
-              {moments.filter((m) => m.lat && m.lng).length} lugares con ubicación guardada.{'\n'}
-              (Integra react-native-maps o expo-maps aquí para el mapa interactivo.)
-            </Text>
-          ))}
+          {tab === 'mapa' &&
+            (moments.filter((m) => m.lat && m.lng).length === 0 ? (
+              <Text style={styles.emptyText}>
+                Añade ubicación a tus momentos para verlos aquí en el mapa.
+              </Text>
+            ) : (
+              <Text style={styles.emptyText}>
+                {moments.filter((m) => m.lat && m.lng).length} lugares con ubicación guardada.{'\n'}
+                (Integra react-native-maps o expo-maps aquí para el mapa interactivo.)
+              </Text>
+            ))}
 
-        {tab === 'diario' &&
-          (diary.length === 0 ? (
-            <Text style={styles.emptyText}>Todavía no hay entradas de diario.</Text>
-          ) : (
-            diary.map((d) => (
-              <View key={d.id} style={styles.diaryEntry}>
-                <Text style={styles.diaryDate}>
-                  {new Date(d.entry_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
-                </Text>
-                <Text style={styles.diaryText}>{d.body}</Text>
-              </View>
-            ))
-          ))}
+          {tab === 'diario' &&
+            (diary.length === 0 ? (
+              <Text style={styles.emptyText}>Todavía no hay entradas de diario.</Text>
+            ) : (
+              diary.map((d) => (
+                <View key={d.id} style={styles.diaryEntry}>
+                  <Text style={styles.diaryDate}>
+                    {new Date(d.entry_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+                  </Text>
+                  <Text style={styles.diaryText}>{d.body}</Text>
+                </View>
+              ))
+            ))}
 
-        {tab === 'nfc' &&
-          (nfcTags.length === 0 ? (
-            <Text style={styles.emptyText}>Este viaje no tiene ningún NFC vinculado todavía.</Text>
-          ) : (
-            nfcTags.map((n) => (
-              <View key={n.id} style={styles.nfcCard}>
-                <Text style={styles.momentTitle}>{n.label}</Text>
-                <Text style={styles.momentSub}>{n.status === 'active' ? 'Vinculado y activo' : 'Inactivo'}</Text>
-              </View>
-            ))
-          ))}
-      </View>
-    </ScrollView>
+          {tab === 'nfc' &&
+            (nfcTags.length === 0 ? (
+              <Text style={styles.emptyText}>Este viaje no tiene ningún NFC vinculado todavía.</Text>
+            ) : (
+              nfcTags.map((n) => (
+                <View key={n.id} style={styles.nfcCard}>
+                  <Text style={styles.momentTitle}>{n.label}</Text>
+                  <Text style={styles.momentSub}>{n.status === 'active' ? 'Vinculado y activo' : 'Inactivo'}</Text>
+                </View>
+              ))
+            ))}
+        </View>
+      </ScrollView>
+
+      {tab === 'recuerdos' && (
+        <Pressable style={styles.fab} onPress={() => router.push(`/crear-recuerdo?tripId=${trip.id}`)}>
+          <Ionicons name="add" size={26} color={colors.background} />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -218,17 +215,22 @@ const styles = StyleSheet.create({
   navtabUnderline: { height: 2, width: '60%', backgroundColor: colors.sage, marginTop: 8, borderRadius: 2 },
   panel: { padding: spacing.lg, paddingBottom: 80, gap: spacing.md },
   emptyText: { fontFamily: fonts.sans, color: colors.ink55, fontSize: 14, lineHeight: 20 },
-  addMomentBtn: {
-    flexDirection: 'row',
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.ink,
-    borderRadius: radii.pill,
-    paddingVertical: 12,
-    marginBottom: spacing.xs,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  addMomentBtnText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 14 },
   momentTitle: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
   momentSub: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.ink55, marginTop: 2 },
   diaryEntry: { borderBottomWidth: 1, borderColor: colors.line, paddingBottom: spacing.md },

@@ -12,17 +12,24 @@ type Moment = Tables<'moments'>;
 export default function MomentoDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [moment, setMoment] = useState<Moment | null>(null);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
     const [{ data }, { data: links }] = await Promise.all([
       supabase.from('moments').select('*').eq('id', id).single(),
-      supabase.from('moment_memories').select('memories(storage_path)').eq('moment_id', id),
+      supabase
+        .from('moment_memories')
+        .select('memories(storage_path, created_at)')
+        .eq('moment_id', id)
+        .order('created_at', { referencedTable: 'memories', ascending: true }),
     ]);
     setMoment(data);
-    const path = (links?.[0]?.memories as { storage_path: string } | null)?.storage_path;
-    setPhotoUrl(path ? supabase.storage.from('memories').getPublicUrl(path).data.publicUrl : null);
+    const urls = (links ?? [])
+      .map((l) => (l.memories as { storage_path: string } | null)?.storage_path)
+      .filter((p): p is string => !!p)
+      .map((path) => supabase.storage.from('memories').getPublicUrl(path).data.publicUrl);
+    setPhotoUrls(urls);
   }, [id]);
 
   useEffect(() => {
@@ -53,12 +60,25 @@ export default function MomentoDetail() {
         >
           <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
         </Pressable>
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={styles.big} />
+        {photoUrls[0] ? (
+          <Image source={{ uri: photoUrls[0] }} style={styles.big} />
         ) : (
           <View style={styles.big} />
         )}
       </View>
+
+      {photoUrls.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.gallery}
+          contentContainerStyle={styles.galleryContent}
+        >
+          {photoUrls.slice(1).map((url) => (
+            <Image key={url} source={{ uri: url }} style={styles.galleryImage} />
+          ))}
+        </ScrollView>
+      )}
 
       <View style={styles.body}>
         {!!moment.place_name && (
@@ -128,7 +148,10 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     backgroundColor: colors.sandDark,
   },
-  body: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl },
+  gallery: { marginTop: spacing.sm },
+  galleryContent: { paddingHorizontal: spacing.xl, gap: 10 },
+  galleryImage: { width: 96, height: 96, borderRadius: radii.md, backgroundColor: colors.sandDark },
+  body: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl, paddingTop: spacing.md },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   metaText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink55 },
   title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink, marginTop: spacing.sm, marginBottom: spacing.md },
