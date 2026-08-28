@@ -28,7 +28,7 @@ function formatDateRange(start: string | null, end: string | null) {
 }
 
 export default function ViajeDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: initialTab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [moments, setMoments] = useState<Moment[]>([]);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
@@ -36,7 +36,7 @@ export default function ViajeDetail() {
   const [momentPhotos, setMomentPhotos] = useState<Record<string, string[]>>({});
   const [memoriesCount, setMemoriesCount] = useState(0);
   const [videosCount, setVideosCount] = useState(0);
-  const [tab, setTab] = useState<Tab>('recuerdos');
+  const [tab, setTab] = useState<Tab>((initialTab as Tab) || 'recuerdos');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -215,7 +215,11 @@ export default function ViajeDetail() {
               <Text style={styles.emptyText}>Todavía no hay entradas de diario.</Text>
             ) : (
               diary.map((d, i) => (
-                <View key={d.id} style={styles.diaryEntry}>
+                <Pressable
+                  key={d.id}
+                  style={styles.diaryEntry}
+                  onPress={() => router.push(`/editar-diario?entryId=${d.id}`)}
+                >
                   <Text style={styles.diaryEyebrow}>Nota de viaje #{i + 1}</Text>
                   <Text style={styles.diaryText}>{d.body}</Text>
                   <View style={styles.diaryFooter}>
@@ -226,7 +230,7 @@ export default function ViajeDetail() {
                       {new Date(d.entry_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </Text>
                   </View>
-                </View>
+                </Pressable>
               ))
             ))}
 
@@ -272,6 +276,12 @@ export default function ViajeDetail() {
 
       {tab === 'recuerdos' && (
         <Pressable style={styles.fab} onPress={() => router.push(`/crear-recuerdo?tripId=${trip.id}`)}>
+          <Ionicons name="add" size={26} color={colors.background} />
+        </Pressable>
+      )}
+
+      {tab === 'diario' && (
+        <Pressable style={styles.fab} onPress={() => router.push(`/crear-diario?tripId=${trip.id}`)}>
           <Ionicons name="add" size={26} color={colors.background} />
         </Pressable>
       )}
