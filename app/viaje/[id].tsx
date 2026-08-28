@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -102,6 +102,12 @@ export default function ViajeDetail() {
   const dateRange = formatDateRange(trip.start_date, trip.end_date);
   const flag = flagForCountry(trip.country);
 
+  const toggleFavorite = async () => {
+    const next = !trip.is_favorite;
+    setTrip({ ...trip, is_favorite: next });
+    await supabase.from('trips').update({ is_favorite: next }).eq('id', trip.id);
+  };
+
   return (
     <View style={styles.screen}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -122,11 +128,8 @@ export default function ViajeDetail() {
             </Pressable>
           </View>
           <View style={styles.heroNavRight}>
-            <Pressable
-              style={styles.roundBtn}
-              onPress={() => Alert.alert('Compartir', 'La opción de compartir viajes llegará pronto.')}
-            >
-              <Ionicons name="share-social-outline" size={16} color="#FBF3EE" />
+            <Pressable style={styles.roundBtn} onPress={toggleFavorite}>
+              <Ionicons name={trip.is_favorite ? 'heart' : 'heart-outline'} size={16} color="#FBF3EE" />
             </Pressable>
             <Pressable
               style={styles.roundBtn}
