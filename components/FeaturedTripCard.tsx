@@ -1,8 +1,9 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
+import { flagForCountry } from '@/lib/flags';
 import type { Trip } from '@/lib/use-trips';
 
 function tripYear(trip: Trip) {
@@ -19,6 +20,7 @@ export function FeaturedTripCard({ trip, momentsCount }: { trip: Trip; momentsCo
   const gradient = gradientFor(trip.title);
   const year = tripYear(trip);
   const days = tripDays(trip);
+  const flag = flagForCountry(trip.country);
 
   return (
     <Pressable
@@ -43,7 +45,10 @@ export function FeaturedTripCard({ trip, momentsCount }: { trip: Trip; momentsCo
           </View>
           {!!year && (
             <View style={[styles.badge, styles.badgeSage]}>
-              <Text style={styles.badgeText}>{year}</Text>
+              <Text style={styles.badgeText}>
+                {!!flag && `${flag} `}
+                {year}
+              </Text>
             </View>
           )}
         </View>
@@ -52,16 +57,29 @@ export function FeaturedTripCard({ trip, momentsCount }: { trip: Trip; momentsCo
         {!!trip.destination_summary && <Text style={styles.subtitle}>{trip.destination_summary}</Text>}
 
         <View style={styles.statsRow}>
-          {days !== null && (
+          <View style={{ flexDirection: 'row', gap: spacing.lg, flex: 1 }}>
+            {days !== null && (
+              <View style={styles.stat}>
+                <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.75)" />
+                <Text style={styles.statText}>{days} días</Text>
+              </View>
+            )}
             <View style={styles.stat}>
-              <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.75)" />
-              <Text style={styles.statText}>{days} días</Text>
+              <Ionicons name="image-outline" size={12} color="rgba(255,255,255,0.75)" />
+              <Text style={styles.statText}>{momentsCount} recuerdos</Text>
             </View>
-          )}
-          <View style={styles.stat}>
-            <Ionicons name="image-outline" size={12} color="rgba(255,255,255,0.75)" />
-            <Text style={styles.statText}>{momentsCount} recuerdos</Text>
           </View>
+
+          <Pressable
+            style={styles.reviveBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              Alert.alert('Revivir', 'El modo Revivir llegará pronto.');
+            }}
+          >
+            <Ionicons name="play" size={9} color={colors.terracotta} />
+            <Text style={styles.reviveBtnText}>Revivir</Text>
+          </Pressable>
         </View>
       </View>
     </Pressable>
@@ -96,7 +114,7 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: fonts.sans, fontSize: 13.5, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
   statsRow: {
     flexDirection: 'row',
-    gap: spacing.lg,
+    alignItems: 'center',
     marginTop: spacing.md,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
@@ -104,4 +122,14 @@ const styles = StyleSheet.create({
   },
   stat: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statText: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: 'rgba(255,255,255,0.85)' },
+  reviveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fff',
+    borderRadius: radii.pill,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  reviveBtnText: { fontFamily: fonts.sansBold, fontSize: 11.5, color: colors.ink },
 });

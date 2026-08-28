@@ -2,6 +2,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
+import { flagForCountry } from '@/lib/flags';
 import type { Trip } from '@/lib/use-trips';
 
 function formatRange(start: string | null, end: string | null) {
@@ -44,7 +45,10 @@ export function TripCard({
           )}
           {!!trip.country && (
             <View style={styles.gridBadge}>
-              <Text style={styles.gridBadgeText}>{trip.country}</Text>
+              <Text style={styles.gridBadgeText}>
+                {flagForCountry(trip.country) ? `${flagForCountry(trip.country)} ` : ''}
+                {trip.country}
+              </Text>
             </View>
           )}
         </View>

@@ -8,6 +8,7 @@ import { useTrips } from '@/lib/use-trips';
 import { supabase } from '@/lib/supabase';
 import { TripCard } from '@/components/TripCard';
 import { FeaturedTripCard } from '@/components/FeaturedTripCard';
+import { flagForCountry } from '@/lib/flags';
 
 type NostalgicMoment = {
   id: string;
@@ -156,7 +157,8 @@ export default function Home() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.nostalgiaEyebrow}>
                   Hace {nostalgia.yearsAgo} {nostalgia.yearsAgo === 1 ? 'año' : 'años'} hoy
-                  {!!nostalgia.tripCountry && ` · ${nostalgia.tripCountry}`}
+                  {!!nostalgia.tripCountry &&
+                    ` · ${flagForCountry(nostalgia.tripCountry) ? `${flagForCountry(nostalgia.tripCountry)} ` : ''}${nostalgia.tripCountry}`}
                 </Text>
                 <Text style={styles.nostalgiaTitle} numberOfLines={1}>
                   {nostalgia.title}
