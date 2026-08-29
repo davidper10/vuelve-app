@@ -9,6 +9,7 @@ import { safeBack } from '@/lib/navigation';
 import { flagForCountry } from '@/lib/flags';
 import { MomentsTimeline } from '@/components/MomentsTimeline';
 import { CollaboratorsRow } from '@/components/CollaboratorsRow';
+import { TripMap } from '@/components/TripMap';
 import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
@@ -198,17 +199,25 @@ export default function ViajeDetail() {
               />
             ))}
 
-          {tab === 'mapa' && (
-            <View style={styles.mapInfoCard}>
-              <Text style={styles.mapInfoText}>
-                {moments.filter((m) => m.lat && m.lng).length} lugares registrados
-                {!!trip.country && ` en ${trip.country}`}
+          {tab === 'mapa' &&
+            (moments.some((m) => m.lat && m.lng) ? (
+              <>
+                <View style={styles.mapInfoCard}>
+                  <Text style={styles.mapInfoText}>
+                    {moments.filter((m) => m.lat && m.lng).length} lugares registrados
+                    {!!trip.country && ` en ${trip.country}`}
+                  </Text>
+                  <View style={styles.mapInfoBadge}>
+                    <Text style={styles.mapInfoBadgeText}>📍 {placesCount} lugares</Text>
+                  </View>
+                </View>
+                <TripMap moments={moments} />
+              </>
+            ) : (
+              <Text style={styles.emptyText}>
+                Añade ubicación a tus momentos para verlos aquí en el mapa.
               </Text>
-              <View style={styles.mapInfoBadge}>
-                <Text style={styles.mapInfoBadgeText}>📍 {placesCount} lugares</Text>
-              </View>
-            </View>
-          )}
+            ))}
 
           {tab === 'diario' &&
             (diary.length === 0 ? (
