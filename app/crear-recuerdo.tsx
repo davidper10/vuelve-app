@@ -7,6 +7,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
+import { requestLocation } from '@/lib/location-picker-bridge';
 
 export default function CrearRecuerdo() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -15,9 +16,18 @@ export default function CrearRecuerdo() {
   const [story, setStory] = useState('');
   const [placeName, setPlaceName] = useState('');
   const [occurredAt, setOccurredAt] = useState(''); // YYYY-MM-DD
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const pickLocation = async () => {
+    const result = await requestLocation(coords);
+    if (result) {
+      setCoords({ lat: result.lat, lng: result.lng });
+      if (!placeName.trim() && result.placeName) setPlaceName(result.placeName);
+    }
+  };
 
   const pickPhotos = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -53,6 +63,8 @@ export default function CrearRecuerdo() {
         story: story.trim() || null,
         place_name: placeName.trim() || null,
         occurred_at: occurredAt.trim() ? `${occurredAt.trim()}T12:00:00` : null,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
       })
       .select()
       .single();
@@ -151,6 +163,14 @@ export default function CrearRecuerdo() {
         multiline
       />
       <Field label="Lugar (opcional)" value={placeName} onChangeText={setPlaceName} placeholder="Kyoto" />
+
+      <Pressable style={styles.mapBtn} onPress={pickLocation}>
+        <Ionicons name="location" size={15} color={colors.sage} />
+        <Text style={styles.mapBtnText}>
+          {coords ? `Ubicación elegida (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})` : 'Elegir en el mapa'}
+        </Text>
+      </Pressable>
+
       <Field label="Fecha (AAAA-MM-DD, opcional)" value={occurredAt} onChangeText={setOccurredAt} placeholder="2026-09-14" />
 
       {!!error && <Text style={styles.error}>{error}</Text>}
@@ -246,6 +266,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  mapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.sageLight,
+    borderRadius: radii.pill,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    marginBottom: spacing.md,
+  },
+  mapBtnText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.sageDark },
   field: { marginBottom: spacing.md },
   label: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.ink70, marginBottom: 6 },
   input: {

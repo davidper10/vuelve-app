@@ -53,6 +53,7 @@ export default function RootLayout() {
           <Stack.Screen name="momento/[id]" />
           <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
           <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
         </Stack>
       </AuthProvider>
     </GestureHandlerRootView>

@@ -7,6 +7,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
+import { requestLocation } from '@/lib/location-picker-bridge';
 import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
@@ -20,6 +21,7 @@ export default function EditarRecuerdo() {
   const [story, setStory] = useState('');
   const [placeName, setPlaceName] = useState('');
   const [occurredAt, setOccurredAt] = useState('');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>([]);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [newPhotos, setNewPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
@@ -42,6 +44,7 @@ export default function EditarRecuerdo() {
       setStory(data.story ?? '');
       setPlaceName(data.place_name ?? '');
       setOccurredAt(data.occurred_at ? data.occurred_at.slice(0, 10) : '');
+      setCoords(data.lat != null && data.lng != null ? { lat: data.lat, lng: data.lng } : null);
     }
     const photos = (links ?? [])
       .map((l) => l.memories as { id: string; storage_path: string } | null)
@@ -83,6 +86,14 @@ export default function EditarRecuerdo() {
     setNewPhotos((prev) => prev.filter((p) => p.uri !== uri));
   };
 
+  const pickLocation = async () => {
+    const result = await requestLocation(coords);
+    if (result) {
+      setCoords({ lat: result.lat, lng: result.lng });
+      if (!placeName.trim() && result.placeName) setPlaceName(result.placeName);
+    }
+  };
+
   const onSave = async () => {
     if (!moment || !session) return;
     setError(null);
@@ -95,6 +106,8 @@ export default function EditarRecuerdo() {
         story: story.trim() || null,
         place_name: placeName.trim() || null,
         occurred_at: occurredAt.trim() ? `${occurredAt.trim()}T12:00:00` : null,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
       })
       .eq('id', moment.id);
 
@@ -218,6 +231,14 @@ export default function EditarRecuerdo() {
         multiline
       />
       <Field label="Lugar (opcional)" value={placeName} onChangeText={setPlaceName} placeholder="Kyoto" />
+
+      <Pressable style={styles.mapBtn} onPress={pickLocation}>
+        <Ionicons name="location" size={15} color={colors.sage} />
+        <Text style={styles.mapBtnText}>
+          {coords ? `Ubicación elegida (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})` : 'Elegir en el mapa'}
+        </Text>
+      </Pressable>
+
       <Field label="Fecha (AAAA-MM-DD, opcional)" value={occurredAt} onChangeText={setOccurredAt} placeholder="2026-09-14" />
 
       {!!error && <Text style={styles.error}>{error}</Text>}
@@ -313,6 +334,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  mapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.sageLight,
+    borderRadius: radii.pill,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    marginBottom: spacing.md,
+  },
+  mapBtnText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.sageDark },
   field: { marginBottom: spacing.md },
   label: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.ink70, marginBottom: 6 },
   input: {
