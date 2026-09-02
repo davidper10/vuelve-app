@@ -1,21 +1,34 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/lib/database.types';
 
-type NfcTag = Tables<'nfc_tags'>;
+type NfcTag = Tables<'nfc_tags'> & {
+  trips: { title: string } | null;
+  moments: { title: string } | null;
+};
+
+const PUBLIC_BASE_URL = 'https://vuelve-app.example.com/m';
 
 export default function Nfc() {
   const [tags, setTags] = useState<NfcTag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<NfcTag | null>(null);
+  const [label, setLabel] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('nfc_tags').select('*').order('created_at', { ascending: false });
-    setTags(data ?? []);
+    const { data } = await supabase
+      .from('nfc_tags')
+      .select('*, trips(title), moments(title)')
+      .order('created_at', { ascending: false });
+    setTags((data as NfcTag[]) ?? []);
     setLoading(false);
   }, []);
 
@@ -25,6 +38,53 @@ export default function Nfc() {
       load();
     }, [load])
   );
+
+  const openTag = (tag: NfcTag) => {
+    setSelected(tag);
+    setLabel(tag.label);
+    setCopied(false);
+  };
+
+  const closeModal = () => setSelected(null);
+
+  const saveLabel = async () => {
+    if (!selected || !label.trim()) return;
+    setSaving(true);
+    await supabase.from('nfc_tags').update({ label: label.trim() }).eq('id', selected.id);
+    setSaving(false);
+    closeModal();
+    load();
+  };
+
+  const toggleStatus = async () => {
+    if (!selected) return;
+    const next = selected.status === 'active' ? 'inactive' : 'active';
+    await supabase.from('nfc_tags').update({ status: next }).eq('id', selected.id);
+    closeModal();
+    load();
+  };
+
+  const copyLink = async () => {
+    if (!selected) return;
+    await Clipboard.setStringAsync(`${PUBLIC_BASE_URL}/${selected.public_slug}`);
+    setCopied(true);
+  };
+
+  const onDelete = () => {
+    if (!selected) return;
+    Alert.alert('Eliminar NFC', `¿Quitar "${selected.label}"? El sticker físico dejará de funcionar.`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          await supabase.from('nfc_tags').delete().eq('id', selected.id);
+          closeModal();
+          load();
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={styles.screen}>
@@ -61,12 +121,15 @@ export default function Nfc() {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Pressable style={styles.card} onPress={() => openTag(item)}>
             <View style={styles.icon}>
-              <Ionicons name="radio-outline" size={20} color={colors.sage} />
+              <Ionicons name={item.link_type === 'moment' ? 'image-outline' : 'radio-outline'} size={20} color={colors.sage} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{item.label}</Text>
+              <Text style={styles.cardTarget} numberOfLines={1}>
+                {item.moments?.title ?? item.trips?.title ?? 'Sin destino'}
+              </Text>
               <View style={styles.statusRow}>
                 <View
                   style={[
@@ -93,9 +156,55 @@ export default function Nfc() {
               </View>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.ink38} />
-          </View>
+          </Pressable>
         )}
       />
+
+      <Modal visible={!!selected} transparent animationType="fade" onRequestClose={closeModal}>
+        <View style={styles.overlay}>
+          <View style={styles.modalCard}>
+            {selected && (
+              <>
+                <Text style={styles.modalTitle}>Editar NFC</Text>
+                <Text style={styles.modalTarget}>
+                  Vinculado a: {selected.moments?.title ?? selected.trips?.title ?? 'sin destino'}
+                </Text>
+
+                <TextInput style={styles.input} value={label} onChangeText={setLabel} placeholderTextColor={colors.ink38} />
+
+                <Pressable style={styles.modalBtn} onPress={saveLabel} disabled={saving}>
+                  <Text style={styles.modalBtnText}>{saving ? 'Guardando…' : 'Guardar nombre'}</Text>
+                </Pressable>
+
+                <Pressable style={styles.secondaryBtn} onPress={toggleStatus}>
+                  <Ionicons
+                    name={selected.status === 'active' ? 'pause-circle-outline' : 'play-circle-outline'}
+                    size={16}
+                    color={colors.sageDark}
+                  />
+                  <Text style={styles.secondaryBtnText}>
+                    {selected.status === 'active' ? 'Desactivar' : 'Activar'}
+                  </Text>
+                </Pressable>
+
+                <Pressable style={styles.secondaryBtn} onPress={copyLink}>
+                  <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={16} color={colors.sageDark} />
+                  <Text style={styles.secondaryBtnText}>{copied ? 'Enlace copiado' : 'Copiar enlace'}</Text>
+                </Pressable>
+
+                <Pressable style={styles.secondaryBtn} onPress={onDelete}>
+                  <Ionicons name="trash-outline" size={16} color={colors.terracotta} />
+                  <Text style={[styles.secondaryBtnText, { color: colors.terracotta }]}>Eliminar</Text>
+                </Pressable>
+
+                <Pressable style={styles.cancelBtn} onPress={closeModal}>
+                  <Text style={styles.cancelBtnText}>Cerrar</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -136,6 +245,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardTitle: { fontFamily: fonts.sansBold, fontSize: 16, color: colors.ink },
+  cardTarget: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink55, marginTop: 1 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' },
   statusPill: { borderRadius: radii.pill, paddingVertical: 3, paddingHorizontal: 9 },
   statusPillActive: { backgroundColor: '#DCF3E3' },
@@ -157,4 +267,47 @@ const styles = StyleSheet.create({
   explainerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   explainerTitle: { fontFamily: fonts.sansBold, fontSize: 13, color: colors.ink },
   explainerBody: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.ink55, lineHeight: 17 },
+  overlay: { flex: 1, backgroundColor: 'rgba(20,12,14,0.5)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.background,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  modalTitle: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
+  modalTarget: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.ink55, marginBottom: spacing.xs },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    borderRadius: radii.sm,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.ink,
+  },
+  modalBtn: {
+    backgroundColor: colors.sage,
+    borderRadius: radii.pill,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  modalBtnText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 14 },
+  secondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radii.pill,
+  },
+  secondaryBtnText: { fontFamily: fonts.sansSemiBold, fontSize: 13.5, color: colors.sageDark },
+  cancelBtn: { alignItems: 'center', paddingVertical: 8 },
+  cancelBtnText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 13 },
 });

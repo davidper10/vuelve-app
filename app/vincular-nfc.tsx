@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-import NfcManager, { NfcTech } from 'react-native-nfc-manager';
+import NfcManager, { Ndef, NfcTech } from 'react-native-nfc-manager';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useTrips } from '@/lib/use-trips';
 import { safeBack } from '@/lib/navigation';
+import type { Tables } from '@/lib/database.types';
 
-type Step = 'checking' | 'unsupported' | 'scan' | 'found' | 'save';
+type Moment = Tables<'moments'>;
+type Step = 'checking' | 'unsupported' | 'target' | 'scan' | 'done';
+type LinkType = 'trip' | 'moment';
+
+const PUBLIC_BASE_URL = 'https://vuelve-app.example.com/m';
 
 function randomSlug(length = 6) {
   const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
@@ -19,15 +25,17 @@ export default function VincularNfc() {
   const { session } = useAuth();
   const { trips } = useTrips();
   const [step, setStep] = useState<Step>('checking');
-  const [tagUid, setTagUid] = useState<string | null>(null);
+  const [linkType, setLinkType] = useState<LinkType>('trip');
   const [label, setLabel] = useState('');
   const [tripId, setTripId] = useState<string | null>(null);
+  const [moments, setMoments] = useState<Moment[]>([]);
+  const [momentId, setMomentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [writing, setWriting] = useState(false);
+  const [savedSlug, setSavedSlug] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       try {
         const supported = await NfcManager.isSupported();
@@ -36,58 +44,70 @@ export default function VincularNfc() {
           return;
         }
         await NfcManager.start();
-        if (!cancelled) setStep('scan');
+        if (!cancelled) setStep('target');
       } catch {
-        // Esperado en Expo Go: react-native-nfc-manager requiere un dev
-        // client / build nativo (npx expo run:ios | run:android, o EAS Build).
+        // Esperado en Expo Go / web: react-native-nfc-manager necesita un
+        // dev client o build nativo (npx expo run:ios | run:android, o EAS).
         if (!cancelled) setStep('unsupported');
       }
     })();
-
     return () => {
       cancelled = true;
       NfcManager.cancelTechnologyRequest().catch(() => {});
     };
   }, []);
 
-  const startScan = async () => {
-    setError(null);
-    try {
-      await NfcManager.requestTechnology(NfcTech.Ndef);
-      const tag = await NfcManager.getTag();
-      const uid = tag?.id ?? randomSlug(8);
-      setTagUid(uid);
-      setStep('found');
-      setTimeout(() => setStep('save'), 700);
-    } catch (e) {
-      setError('No se pudo leer el NFC. Inténtalo de nuevo.');
-    } finally {
-      NfcManager.cancelTechnologyRequest().catch(() => {});
-    }
-  };
-
-  const onSave = async () => {
-    if (!session) return;
-    setSaving(true);
-    setError(null);
-
-    const { error: err } = await supabase.from('nfc_tags').insert({
-      owner_id: session.user.id,
-      label: label.trim() || 'NFC sin nombre',
-      tag_uid: tagUid,
-      link_type: 'trip',
-      trip_id: tripId,
-      public_slug: randomSlug(),
-      status: 'active',
-    });
-
-    setSaving(false);
-
-    if (err) {
-      setError(err.message);
+  useEffect(() => {
+    if (linkType !== 'moment' || !tripId) {
+      setMoments([]);
+      setMomentId(null);
       return;
     }
-    router.replace('/(tabs)/nfc');
+    supabase
+      .from('moments')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('occurred_at', { ascending: true })
+      .then(({ data }) => setMoments(data ?? []));
+  }, [linkType, tripId]);
+
+  const canContinue = !!label.trim() && (linkType === 'trip' ? !!tripId : !!tripId && !!momentId);
+
+  const writeAndSave = async () => {
+    if (!session || !canContinue) return;
+    setError(null);
+    setWriting(true);
+
+    const slug = randomSlug();
+    const url = `${PUBLIC_BASE_URL}/${slug}`;
+
+    try {
+      await NfcManager.requestTechnology(NfcTech.Ndef);
+      const bytes = Ndef.encodeMessage([Ndef.uriRecord(url)]);
+      await NfcManager.ndefHandler.writeNdefMessage(bytes);
+      const tag = await NfcManager.getTag();
+
+      const { error: err } = await supabase.from('nfc_tags').insert({
+        owner_id: session.user.id,
+        label: label.trim(),
+        tag_uid: tag?.id ?? null,
+        link_type: linkType,
+        trip_id: tripId,
+        moment_id: linkType === 'moment' ? momentId : null,
+        public_slug: slug,
+        status: 'active',
+      });
+
+      if (err) throw err;
+
+      setSavedSlug(slug);
+      setStep('done');
+    } catch (e) {
+      setError('No se pudo escribir el NFC. Mantén el sticker quieto junto al teléfono e inténtalo de nuevo.');
+    } finally {
+      setWriting(false);
+      NfcManager.cancelTechnologyRequest().catch(() => {});
+    }
   };
 
   if (step === 'checking') {
@@ -104,7 +124,7 @@ export default function VincularNfc() {
         <Text style={styles.title}>NFC no disponible aquí</Text>
         <Text style={styles.body}>
           react-native-nfc-manager necesita un dev client o un build nativo — no funciona dentro de
-          Expo Go. Ejecuta{' '}
+          Expo Go ni en web. Ejecuta{' '}
           <Text style={{ fontFamily: fonts.sansBold }}>npx expo run:ios</Text> /{' '}
           <Text style={{ fontFamily: fonts.sansBold }}>run:android</Text> (o un build de EAS) para
           probar esta pantalla en un dispositivo real con NFC.
@@ -116,21 +136,41 @@ export default function VincularNfc() {
     );
   }
 
-  if (step === 'scan' || step === 'found') {
+  if (step === 'scan') {
     return (
       <View style={[styles.screen, styles.center, { paddingHorizontal: spacing.xl }]}>
-        <Text style={styles.title}>
-          {step === 'found' ? 'NFC encontrado' : 'Acerca el sticker NFC a tu teléfono'}
+        <View style={styles.nfcPulse}>
+          <Ionicons name="radio-outline" size={40} color={colors.sage} />
+        </View>
+        <Text style={styles.title}>Acerca el sticker NFC</Text>
+        <Text style={styles.body}>
+          Mantén el sticker o imán junto a la parte superior del teléfono mientras se escribe.
         </Text>
-        {step === 'scan' && (
-          <>
-            <Text style={styles.body}>Mantén el sticker cerca de la parte superior del dispositivo.</Text>
-            {!!error && <Text style={styles.error}>{error}</Text>}
-            <Pressable style={styles.button} onPress={startScan}>
-              <Text style={styles.buttonText}>Empezar a escanear</Text>
-            </Pressable>
-          </>
-        )}
+        {!!error && <Text style={styles.error}>{error}</Text>}
+        <Pressable style={[styles.button, writing && { opacity: 0.6 }]} onPress={writeAndSave} disabled={writing}>
+          <Text style={styles.buttonText}>{writing ? 'Escribiendo…' : 'Escribir NFC'}</Text>
+        </Pressable>
+        <Pressable style={styles.cancel} onPress={() => setStep('target')}>
+          <Text style={styles.cancelText}>Atrás</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (step === 'done') {
+    return (
+      <View style={[styles.screen, styles.center, { paddingHorizontal: spacing.xl }]}>
+        <View style={styles.doneIcon}>
+          <Ionicons name="checkmark" size={28} color={colors.background} />
+        </View>
+        <Text style={styles.title}>NFC vinculado</Text>
+        <Text style={styles.body}>
+          "{label}" ya está guardado y activo.{'\n'}
+          Enlace: {PUBLIC_BASE_URL}/{savedSlug}
+        </Text>
+        <Pressable style={styles.button} onPress={() => router.replace('/(tabs)/nfc')}>
+          <Text style={styles.buttonText}>Listo</Text>
+        </Pressable>
       </View>
     );
   }
@@ -148,6 +188,21 @@ export default function VincularNfc() {
         placeholderTextColor={colors.ink38}
       />
 
+      <View style={styles.typeRow}>
+        <Pressable
+          style={[styles.typeOption, linkType === 'trip' && styles.typeOptionOn]}
+          onPress={() => setLinkType('trip')}
+        >
+          <Text style={[styles.typeOptionText, linkType === 'trip' && styles.typeOptionTextOn]}>Un viaje entero</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.typeOption, linkType === 'moment' && styles.typeOptionOn]}
+          onPress={() => setLinkType('moment')}
+        >
+          <Text style={[styles.typeOptionText, linkType === 'moment' && styles.typeOptionTextOn]}>Un momento</Text>
+        </Pressable>
+      </View>
+
       <Text style={[styles.label, { marginTop: spacing.md }]}>Viaje</Text>
       {trips.length === 0 ? (
         <Text style={styles.body}>Todavía no tienes viajes creados.</Text>
@@ -163,14 +218,35 @@ export default function VincularNfc() {
         ))
       )}
 
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      {linkType === 'moment' && tripId && (
+        <>
+          <Text style={[styles.label, { marginTop: spacing.md }]}>Momento</Text>
+          {moments.length === 0 ? (
+            <Text style={styles.body}>Este viaje todavía no tiene momentos guardados.</Text>
+          ) : (
+            moments.map((m) => (
+              <Pressable
+                key={m.id}
+                style={[styles.tripOption, momentId === m.id && styles.tripOptionOn]}
+                onPress={() => setMomentId(m.id)}
+              >
+                <Text style={styles.tripOptionText}>{m.title}</Text>
+              </Pressable>
+            ))
+          )}
+        </>
+      )}
 
       <Pressable
-        style={[styles.button, (!label || !tripId || saving) && { opacity: 0.5 }]}
-        onPress={onSave}
-        disabled={!label || !tripId || saving}
+        style={[styles.button, !canContinue && { opacity: 0.5 }]}
+        onPress={() => setStep('scan')}
+        disabled={!canContinue}
       >
-        <Text style={styles.buttonText}>{saving ? 'Guardando…' : 'Guardar'}</Text>
+        <Text style={styles.buttonText}>Continuar</Text>
+      </Pressable>
+
+      <Pressable style={styles.cancel} onPress={() => safeBack('/nfc')}>
+        <Text style={styles.cancelText}>Cancelar</Text>
       </Pressable>
     </ScrollView>
   );
@@ -194,6 +270,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.ink,
   },
+  typeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  typeOption: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    borderRadius: radii.sm,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  typeOptionOn: { borderColor: colors.sage, backgroundColor: colors.sageLight },
+  typeOptionText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink55 },
+  typeOptionTextOn: { color: colors.sageDark },
   tripOption: {
     borderWidth: 1,
     borderColor: colors.line,
@@ -204,7 +293,25 @@ const styles = StyleSheet.create({
   },
   tripOptionOn: { borderColor: colors.sage, backgroundColor: colors.sand },
   tripOptionText: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
-  error: { fontFamily: fonts.sansMedium, color: colors.terracotta, fontSize: 13, marginTop: spacing.md },
+  error: { fontFamily: fonts.sansMedium, color: colors.terracotta, fontSize: 13, marginBottom: spacing.md, textAlign: 'center' },
+  nfcPulse: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.sageLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  doneIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
   button: {
     backgroundColor: colors.ink,
     borderRadius: radii.pill,
@@ -213,6 +320,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   buttonText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 15.5 },
-  cancel: { marginTop: spacing.lg },
+  cancel: { marginTop: spacing.lg, alignItems: 'center' },
   cancelText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 14 },
 });
