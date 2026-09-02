@@ -28,6 +28,11 @@
               "scheme": "https",
               "host": "vuelve-app.example.com",
               "pathPrefix": "/m"
+            },
+            {
+              "scheme": "https",
+              "host": "vuelve-app.example.com",
+              "pathPrefix": "/unirse"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
