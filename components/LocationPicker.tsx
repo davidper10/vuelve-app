@@ -11,19 +11,20 @@ function buildHtml(initialLat: number, initialLng: number, hasInitial: boolean) 
 <div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  var pinIcon = L.divIcon({
+    html: '<div style="font-size:34px;line-height:34px;">📍</div>',
+    className: '',
+    iconSize: [34, 34],
+    iconAnchor: [17, 32],
   });
   var map = L.map('map').setView([${initialLat}, ${initialLng}], ${hasInitial ? 13 : 3});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
-  var marker = ${hasInitial ? `L.marker([${initialLat}, ${initialLng}]).addTo(map)` : 'null'};
+  var marker = ${hasInitial ? `L.marker([${initialLat}, ${initialLng}], {icon: pinIcon}).addTo(map)` : 'null'};
   function post(msg) {
     window.ReactNativeWebView.postMessage(JSON.stringify(msg));
   }
   map.on('click', function (e) {
-    if (marker) { marker.setLatLng(e.latlng); } else { marker = L.marker(e.latlng).addTo(map); }
+    if (marker) { marker.setLatLng(e.latlng); } else { marker = L.marker(e.latlng, {icon: pinIcon}).addTo(map); }
     post({ lat: e.latlng.lat, lng: e.latlng.lng });
   });
 </script>

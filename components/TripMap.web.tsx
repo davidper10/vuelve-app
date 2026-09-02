@@ -41,12 +41,12 @@ export function TripMap({ moments }: { moments: Moment[] }) {
       const L = await import('leaflet');
       if (cancelled || !containerRef.current) return;
 
-      // Metro bundlea leaflet.js, así que la auto-detección de la ruta de
-      // los iconos (basada en dónde se cargó el script) no aplica aquí.
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      const pinIcon = L.divIcon({
+        html: '<div style="font-size:30px;line-height:30px;">📍</div>',
+        className: '',
+        iconSize: [30, 30],
+        iconAnchor: [15, 28],
+        popupAnchor: [0, -26],
       });
 
       if (!mapRef.current) {
@@ -57,7 +57,7 @@ export function TripMap({ moments }: { moments: Moment[] }) {
       }
 
       pins.forEach((p) => {
-        const marker = L.marker([p.lat, p.lng]).addTo(mapRef.current);
+        const marker = L.marker([p.lat, p.lng], { icon: pinIcon }).addTo(mapRef.current);
         marker.bindPopup(`<strong>${escapeHtml(p.title)}</strong>${p.place ? `<br/>${escapeHtml(p.place)}` : ''}`);
       });
 

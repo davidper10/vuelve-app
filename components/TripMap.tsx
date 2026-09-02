@@ -15,7 +15,7 @@ function buildHtml(pins: Pin[]) {
   const markersJs = pins
     .map(
       (p) =>
-        `L.marker([${p.lat}, ${p.lng}]).addTo(map).bindPopup(${JSON.stringify(
+        `L.marker([${p.lat}, ${p.lng}], {icon: pinIcon}).addTo(map).bindPopup(${JSON.stringify(
           `<strong>${escapeHtml(p.title)}</strong>${p.place ? '<br/>' + escapeHtml(p.place) : ''}`
         )});`
     )
@@ -36,6 +36,13 @@ function buildHtml(pins: Pin[]) {
 <script>
   var map = L.map('map').setView([${center.lat}, ${center.lng}], 6);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+  var pinIcon = L.divIcon({
+    html: '<div style="font-size:30px;line-height:30px;">📍</div>',
+    className: '',
+    iconSize: [30, 30],
+    iconAnchor: [15, 28],
+    popupAnchor: [0, -26],
+  });
   ${markersJs}
   ${boundsJs}
 </script>
