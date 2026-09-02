@@ -9,8 +9,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.vuelveapp.mobile",
-      "associatedDomains": ["applinks:vuelve-app.example.com"]
+      "bundleIdentifier": "com.vuelveapp.mobile"
     },
     "android": {
       "package": "com.vuelveapp.mobile",
@@ -60,14 +59,6 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Vuelve usa tu ubicación para guardar dónde ocurrió cada recuerdo y mostrarlo en el mapa del viaje."
-        }
-      ],
-      [
-        "react-native-nfc-manager",
-        {
-          "nfcPermission": "Vuelve usa NFC para vincular tus recuerdos a objetos físicos.",
-          "selectIdentifiers": [],
-          "systemCodes": []
         }
       ],
       [
