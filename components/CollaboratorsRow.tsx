@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
@@ -41,6 +41,7 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
   const [owner, setOwner] = useState<OwnerProfile>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -65,15 +66,25 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
 
   const isOwner = session?.user.id === ownerId;
   const total = 1 + members.length;
-  const shown = [
-    { key: 'owner', name: owner?.full_name ?? 'Propietario', avatarUrl: owner?.avatar_url, pending: false },
+  const allPeople = [
+    { key: 'owner', name: owner?.full_name ?? 'Propietario', avatarUrl: owner?.avatar_url, pending: false, isOwner: true, memberId: null as string | null, invitedEmail: null as string | null },
     ...members.map((m) => ({
       key: m.id,
-      name: m.profiles?.full_name ?? m.invited_email,
+      name: m.profiles?.full_name ?? m.invited_email ?? 'Invitado',
       avatarUrl: m.profiles?.avatar_url,
       pending: !m.user_id,
+      isOwner: false,
+      memberId: m.id,
+      invitedEmail: m.invited_email,
     })),
-  ].slice(0, 4);
+  ];
+  const shown = allPeople.slice(0, 4);
+
+  const openList = () => {
+    setInviting(false);
+    setError(null);
+    setModalOpen(true);
+  };
 
   const onInvite = async () => {
     setError(null);
@@ -92,13 +103,18 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
       return;
     }
     setEmail('');
-    setModalOpen(false);
+    setInviting(false);
+    load();
+  };
+
+  const onRemove = async (memberId: string) => {
+    await supabase.from('trip_members').delete().eq('id', memberId);
     load();
   };
 
   return (
     <View style={styles.row}>
-      <View style={styles.left}>
+      <Pressable style={styles.left} onPress={openList}>
         <View style={styles.stack}>
           {shown.map((p, i) => (
             <View key={p.key} style={[styles.avatarWrap, { marginLeft: i === 0 ? 0 : -10, zIndex: shown.length - i }]}>
@@ -109,10 +125,16 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
         <Text style={styles.label}>
           Álbum Colaborativo ({total} {total === 1 ? 'participante' : 'participantes'})
         </Text>
-      </View>
+      </Pressable>
 
       {isOwner && (
-        <Pressable onPress={() => setModalOpen(true)}>
+        <Pressable
+          onPress={() => {
+            setInviting(true);
+            setError(null);
+            setModalOpen(true);
+          }}
+        >
           <Text style={styles.inviteLink}>+ invitar</Text>
         </Pressable>
       )}
@@ -120,31 +142,70 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
         <View style={styles.overlay}>
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Invitar a este viaje</Text>
-            <Text style={styles.cardBody}>
-              Guardamos la invitación; la persona tendrá acceso automáticamente al registrarse en Vuelve con ese
-              email.
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="email@ejemplo.com"
-              placeholderTextColor={colors.ink38}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            {!!error && <Text style={styles.error}>{error}</Text>}
-            <Pressable
-              style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
-              onPress={onInvite}
-              disabled={submitting}
-            >
-              <Text style={styles.submitBtnText}>{submitting ? 'Enviando…' : 'Enviar invitación'}</Text>
-            </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => setModalOpen(false)}>
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
-            </Pressable>
+            {inviting ? (
+              <>
+                <Text style={styles.cardTitle}>Invitar a este viaje</Text>
+                <Text style={styles.cardBody}>
+                  Guardamos la invitación; la persona tendrá acceso automáticamente al registrarse en Vuelve con ese
+                  email.
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="email@ejemplo.com"
+                  placeholderTextColor={colors.ink38}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+                {!!error && <Text style={styles.error}>{error}</Text>}
+                <Pressable
+                  style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+                  onPress={onInvite}
+                  disabled={submitting}
+                >
+                  <Text style={styles.submitBtnText}>{submitting ? 'Enviando…' : 'Enviar invitación'}</Text>
+                </Pressable>
+                <Pressable style={styles.cancelBtn} onPress={() => setInviting(false)}>
+                  <Text style={styles.cancelBtnText}>Volver a la lista</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.cardTitle}>Colaboradores</Text>
+                <Text style={styles.cardBody}>Personas con acceso a este álbum.</Text>
+
+                <ScrollView style={styles.list}>
+                  {allPeople.map((p) => (
+                    <View key={p.key} style={styles.listRow}>
+                      <Avatar name={p.name} avatarUrl={p.avatarUrl} pending={p.pending} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.listName} numberOfLines={1}>
+                          {p.name}
+                        </Text>
+                        <Text style={styles.listMeta}>
+                          {p.isOwner ? 'Propietario' : p.pending ? `Invitación pendiente · ${p.invitedEmail}` : 'Colaborador'}
+                        </Text>
+                      </View>
+                      {isOwner && !p.isOwner && p.memberId && (
+                        <Pressable onPress={() => onRemove(p.memberId!)} style={styles.removeBtn}>
+                          <Ionicons name="close" size={14} color={colors.terracotta} />
+                        </Pressable>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+
+                {isOwner && (
+                  <Pressable style={styles.submitBtn} onPress={() => setInviting(true)}>
+                    <Text style={styles.submitBtnText}>+ invitar a alguien</Text>
+                  </Pressable>
+                )}
+                <Pressable style={styles.cancelBtn} onPress={() => setModalOpen(false)}>
+                  <Text style={styles.cancelBtnText}>Cerrar</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -176,6 +237,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 360,
+    maxHeight: '80%',
     backgroundColor: colors.background,
     borderRadius: radii.xl,
     padding: spacing.lg,
@@ -183,6 +245,25 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
   cardBody: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.ink55, lineHeight: 18 },
+  list: { marginTop: spacing.xs },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  listName: { fontFamily: fonts.sansSemiBold, fontSize: 13.5, color: colors.ink },
+  listMeta: { fontFamily: fonts.sans, fontSize: 11, color: colors.ink55, marginTop: 1 },
+  removeBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.terracottaLight,
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.line,
