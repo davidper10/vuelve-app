@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
-import { confirmDestructive } from '@/lib/confirm';
+import { useConfirm } from '@/lib/confirm-context';
 import type { Tables } from '@/lib/database.types';
 
 type NfcTag = Tables<'nfc_tags'> & {
@@ -16,6 +16,7 @@ type NfcTag = Tables<'nfc_tags'> & {
 const PUBLIC_BASE_URL = 'https://vuelve-app.example.com/m';
 
 export default function Nfc() {
+  const confirm = useConfirm();
   const [tags, setTags] = useState<NfcTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<NfcTag | null>(null);
@@ -71,18 +72,18 @@ export default function Nfc() {
     setCopied(true);
   };
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!selected) return;
-    confirmDestructive(
-      'Eliminar NFC',
-      `¿Quitar "${selected.label}"? El sticker físico dejará de funcionar.`,
-      'Eliminar',
-      async () => {
-        await supabase.from('nfc_tags').delete().eq('id', selected.id);
-        closeModal();
-        load();
-      }
-    );
+    const ok = await confirm({
+      title: 'Eliminar NFC',
+      message: `¿Quitar "${selected.label}"? El sticker físico dejará de funcionar.`,
+      confirmLabel: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+    await supabase.from('nfc_tags').delete().eq('id', selected.id);
+    closeModal();
+    load();
   };
 
   return (

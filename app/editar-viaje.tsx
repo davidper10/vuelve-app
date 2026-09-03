@@ -6,12 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { safeBack } from '@/lib/navigation';
-import { confirmDestructive } from '@/lib/confirm';
+import { useConfirm } from '@/lib/confirm-context';
 import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
 
 export default function EditarViaje() {
+  const confirm = useConfirm();
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [title, setTitle] = useState('');
@@ -101,14 +102,15 @@ export default function EditarViaje() {
     router.replace(`/viaje/${tripId}`);
   };
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!tripId || !trip) return;
-    confirmDestructive(
-      'Eliminar viaje',
-      `¿Seguro que quieres eliminar "${trip.title}"? Se borrarán también sus recuerdos, el mapa, el diario y los tags NFC vinculados. Esta acción no se puede deshacer.`,
-      'Eliminar',
-      confirmDelete
-    );
+    const ok = await confirm({
+      title: 'Eliminar viaje',
+      message: `¿Seguro que quieres eliminar "${trip.title}"? Se borrarán también sus recuerdos, el mapa, el diario y los tags NFC vinculados. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      destructive: true,
+    });
+    if (ok) confirmDelete();
   };
 
   const confirmDelete = async () => {
