@@ -4,19 +4,24 @@ import { Link, router } from 'expo-router';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 
+const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
+
 export default function SignUp() {
   const { signUp } = useAuth();
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const usernameValid = USERNAME_PATTERN.test(username.trim().toLowerCase());
+
   const onSubmit = async () => {
     setError(null);
     setSubmitting(true);
-    const { error: err } = await signUp(email.trim(), password, fullName.trim());
+    const { error: err } = await signUp(email.trim(), password, fullName.trim(), username.trim());
     setSubmitting(false);
     if (err) {
       setError(err);
@@ -59,6 +64,21 @@ export default function SignUp() {
       </View>
 
       <View style={styles.field}>
+        <Text style={styles.label}>Nombre de usuario</Text>
+        <TextInput
+          style={styles.input}
+          autoCapitalize="none"
+          value={username}
+          onChangeText={setUsername}
+          placeholder="tu_usuario"
+          placeholderTextColor={colors.ink38}
+        />
+        {!!username && !usernameValid && (
+          <Text style={styles.hint}>3-20 caracteres: minúsculas, números o guion bajo.</Text>
+        )}
+      </View>
+
+      <View style={styles.field}>
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={styles.input}
@@ -88,7 +108,7 @@ export default function SignUp() {
       <Pressable
         style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.9 }]}
         onPress={onSubmit}
-        disabled={submitting || !email || !password || !fullName}
+        disabled={submitting || !email || !password || !fullName || !usernameValid}
       >
         <Text style={styles.primaryButtonText}>{submitting ? 'Creando…' : 'Crear cuenta'}</Text>
       </Pressable>
@@ -126,6 +146,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   error: { fontFamily: fonts.sansMedium, color: colors.terracotta, marginBottom: spacing.sm, fontSize: 13 },
+  hint: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.ink38, marginTop: 6 },
   primaryButton: {
     backgroundColor: colors.ink,
     borderRadius: radii.pill,

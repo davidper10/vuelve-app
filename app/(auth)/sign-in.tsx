@@ -1,21 +1,31 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 
 export default function SignIn() {
-  const { signInWithPassword } = useAuth();
-  const [email, setEmail] = useState('');
+  const { signInWithIdentifier, signInWithOAuth } = useAuth();
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
 
   const onSubmit = async () => {
     setError(null);
     setSubmitting(true);
-    const { error: err } = await signInWithPassword(email.trim(), password);
+    const { error: err } = await signInWithIdentifier(identifier.trim(), password);
     setSubmitting(false);
+    if (err) setError(err);
+  };
+
+  const onGoogle = async () => {
+    setError(null);
+    setOauthLoading(true);
+    const { error: err } = await signInWithOAuth('google');
+    setOauthLoading(false);
     if (err) setError(err);
   };
 
@@ -28,14 +38,13 @@ export default function SignIn() {
       <Text style={styles.title}>¿A dónde quieres{'\n'}volver hoy?</Text>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>Email o nombre de usuario</Text>
         <TextInput
           style={styles.input}
           autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="tu@email.com"
+          value={identifier}
+          onChangeText={setIdentifier}
+          placeholder="tu@email.com o tu_usuario"
           placeholderTextColor={colors.ink38}
         />
       </View>
@@ -57,9 +66,30 @@ export default function SignIn() {
       <Pressable
         style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.9 }]}
         onPress={onSubmit}
-        disabled={submitting || !email || !password}
+        disabled={submitting || !identifier || !password}
       >
         <Text style={styles.primaryButtonText}>{submitting ? 'Entrando…' : 'Entrar'}</Text>
+      </Pressable>
+
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>o continúa con</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <Pressable
+        style={({ pressed }) => [styles.oauthButton, pressed && { opacity: 0.9 }]}
+        onPress={onGoogle}
+        disabled={oauthLoading}
+      >
+        {oauthLoading ? (
+          <ActivityIndicator color={colors.ink} size="small" />
+        ) : (
+          <>
+            <Ionicons name="logo-google" size={17} color={colors.ink} />
+            <Text style={styles.oauthButtonText}>Continuar con Google</Text>
+          </>
+        )}
       </Pressable>
 
       <Link href="/(auth)/sign-up" style={styles.link}>
@@ -95,6 +125,22 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   primaryButtonText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 15.5 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.lg },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
+  dividerText: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: colors.ink38 },
+  oauthButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    borderRadius: radii.pill,
+    paddingVertical: 15,
+    marginTop: spacing.md,
+  },
+  oauthButtonText: { fontFamily: fonts.sansBold, color: colors.ink, fontSize: 14.5 },
   link: { marginTop: spacing.lg, alignSelf: 'center' },
   linkText: { fontFamily: fonts.sansSemiBold, color: colors.terracotta, fontSize: 13.5 },
 });

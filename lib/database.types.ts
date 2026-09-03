@@ -275,18 +275,21 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -422,7 +425,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      email_for_username: {
+        Args: { username_input: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

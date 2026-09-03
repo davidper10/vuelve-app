@@ -34,7 +34,10 @@
               "pathPrefix": "/unirse"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -66,7 +69,8 @@
         {
           "photosPermission": "Vuelve usa tus fotos para añadirlas a los recuerdos de tus viajes."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
