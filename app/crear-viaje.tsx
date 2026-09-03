@@ -165,7 +165,7 @@ export default function CrearViaje() {
       {showSuccess && (
         <View style={styles.successOverlay} pointerEvents="none">
           <Animated.Text style={[styles.successText, { opacity: textOpacity }]}>Viaje creado</Animated.Text>
-          <Animated.View style={[styles.successPlane, { transform: [{ translateX: planeX }, { rotate: '90deg' }] }]}>
+          <Animated.View style={[styles.successPlane, { transform: [{ translateX: planeX }] }]}>
             <Ionicons name="airplane" size={40} color={colors.ink} />
           </Animated.View>
         </View>
