@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { confirmDestructive } from '@/lib/confirm';
 import type { Tables } from '@/lib/database.types';
 
 type NfcTag = Tables<'nfc_tags'> & {
@@ -72,18 +73,16 @@ export default function Nfc() {
 
   const onDelete = () => {
     if (!selected) return;
-    Alert.alert('Eliminar NFC', `¿Quitar "${selected.label}"? El sticker físico dejará de funcionar.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          await supabase.from('nfc_tags').delete().eq('id', selected.id);
-          closeModal();
-          load();
-        },
-      },
-    ]);
+    confirmDestructive(
+      'Eliminar NFC',
+      `¿Quitar "${selected.label}"? El sticker físico dejará de funcionar.`,
+      'Eliminar',
+      async () => {
+        await supabase.from('nfc_tags').delete().eq('id', selected.id);
+        closeModal();
+        load();
+      }
+    );
   };
 
   return (

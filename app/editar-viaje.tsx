@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { safeBack } from '@/lib/navigation';
+import { confirmDestructive } from '@/lib/confirm';
 import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
@@ -102,13 +103,11 @@ export default function EditarViaje() {
 
   const onDelete = () => {
     if (!tripId || !trip) return;
-    Alert.alert(
+    confirmDestructive(
       'Eliminar viaje',
       `¿Seguro que quieres eliminar "${trip.title}"? Se borrarán también sus recuerdos, el mapa, el diario y los tags NFC vinculados. Esta acción no se puede deshacer.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: confirmDelete },
-      ]
+      'Eliminar',
+      confirmDelete
     );
   };
 

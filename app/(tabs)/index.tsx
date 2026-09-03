@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useTrips } from '@/lib/use-trips';
 import { supabase } from '@/lib/supabase';
+import { notify } from '@/lib/confirm';
 import { TripCard } from '@/components/TripCard';
 import { FeaturedTripCard } from '@/components/FeaturedTripCard';
 import { flagForCountry } from '@/lib/flags';
@@ -115,7 +116,7 @@ export default function Home() {
           </View>
           <Pressable
             style={styles.bellBtn}
-            onPress={() => Alert.alert('Notificaciones', 'No hay notificaciones nuevas.')}
+            onPress={() => notify('Notificaciones', 'No hay notificaciones nuevas.')}
           >
             <Ionicons name="notifications-outline" size={17} color={colors.ink} />
           </Pressable>
