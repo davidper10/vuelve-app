@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 
 export default function SignUp() {
+  const insets = useSafeAreaInsets();
   const { signUp } = useAuth();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -32,7 +34,12 @@ export default function SignUp() {
 
   if (done) {
     return (
-      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.screen,
+          { justifyContent: 'center', alignItems: 'center', padding: spacing.xl, paddingTop: insets.top + spacing.xl },
+        ]}
+      >
         <Text style={styles.title}>Revisa tu email</Text>
         <Text style={styles.subtitle}>
           Te hemos enviado un enlace de confirmación. Confírmalo y vuelve a entrar.
@@ -49,6 +56,13 @@ export default function SignUp() {
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
       <Text style={styles.eyebrow}>Empieza tu colección</Text>
       <Text style={styles.title}>Crea tu cuenta</Text>
 
@@ -116,12 +130,14 @@ export default function SignUp() {
       <Link href="/(auth)/sign-in" style={styles.link}>
         <Text style={styles.linkText}>Ya tengo cuenta</Text>
       </Link>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background, padding: spacing.xl, justifyContent: 'center' },
+  screen: { flex: 1, backgroundColor: colors.background },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
   eyebrow: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.ink55, marginBottom: 4 },
   title: { fontFamily: fonts.serif, fontSize: 36, color: colors.ink, marginBottom: spacing.xl },
   subtitle: {

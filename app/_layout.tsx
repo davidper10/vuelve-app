@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   useFonts as useInterFonts,
   Inter_400Regular,
@@ -40,22 +41,24 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="viaje/[id]" />
-          <Stack.Screen name="momento/[id]" />
-          <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
-        </Stack>
-      </AuthProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="viaje/[id]" />
+            <Stack.Screen name="momento/[id]" />
+            <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
+          </Stack>
+        </AuthProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
