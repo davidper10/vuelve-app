@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
 import { requestLocation } from '@/lib/location-picker-bridge';
+import { DateField } from '@/components/DateField';
 
 export default function CrearRecuerdo() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -171,7 +172,7 @@ export default function CrearRecuerdo() {
         </Text>
       </Pressable>
 
-      <Field label="Fecha (AAAA-MM-DD, opcional)" value={occurredAt} onChangeText={setOccurredAt} placeholder="2026-09-14" />
+      <DateField label="Fecha (opcional)" value={occurredAt} onChange={setOccurredAt} />
 
       {!!error && <Text style={styles.error}>{error}</Text>}
 

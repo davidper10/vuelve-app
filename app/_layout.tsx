@@ -15,6 +15,7 @@ import {
   DMSerifDisplay_400Regular_Italic,
 } from '@expo-google-fonts/dm-serif-display';
 import { AuthProvider } from '@/lib/auth-context';
+import { ConfirmProvider } from '@/lib/confirm-context';
 import { colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -41,20 +42,22 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="viaje/[id]" />
-          <Stack.Screen name="momento/[id]" />
-          <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
-        </Stack>
+        <ConfirmProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="viaje/[id]" />
+            <Stack.Screen name="momento/[id]" />
+            <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
+          </Stack>
+        </ConfirmProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );
