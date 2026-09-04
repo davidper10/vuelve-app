@@ -1,5 +1,16 @@
-import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,9 +18,11 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
+import { DateField } from '@/components/DateField';
 
 export default function CrearViaje() {
   const { session } = useAuth();
+  const { width } = useWindowDimensions();
   const [title, setTitle] = useState('');
   const [country, setCountry] = useState('');
   const [destinationSummary, setDestinationSummary] = useState('');
@@ -18,6 +31,30 @@ export default function CrearViaje() {
   const [cover, setCover] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const planeX = useRef(new Animated.Value(-80)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
+
+  const playSuccessAndNavigate = (tripId: string) => {
+    setShowSuccess(true);
+    planeX.setValue(-80);
+    textOpacity.setValue(0);
+
+    Animated.parallel([
+      Animated.timing(planeX, {
+        toValue: width + 80,
+        duration: 1600,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.delay(500),
+        Animated.timing(textOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+      ]),
+    ]).start(() => {
+      router.replace(`/viaje/${tripId}`);
+    });
+  };
 
   const pickCover = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -76,54 +113,65 @@ export default function CrearViaje() {
     }
 
     setSubmitting(false);
-    router.replace(`/viaje/${data.id}`);
+    playSuccessAndNavigate(data.id);
   };
 
   const previewUri = cover?.uri ?? null;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
-      <Text style={styles.title}>Nuevo viaje</Text>
+    <View style={styles.screen}>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
+        <Text style={styles.title}>Nuevo viaje</Text>
 
-      <Pressable style={styles.photoPicker} onPress={pickCover}>
-        {previewUri ? (
-          <Image source={{ uri: previewUri }} style={styles.photoPreview} />
-        ) : (
-          <View style={styles.photoPlaceholder}>
-            <Ionicons name="image-outline" size={26} color={colors.ink38} />
-            <Text style={styles.photoPlaceholderText}>Añadir foto de portada</Text>
+        <Pressable style={styles.photoPicker} onPress={pickCover}>
+          {previewUri ? (
+            <Image source={{ uri: previewUri }} style={styles.photoPreview} />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <Ionicons name="image-outline" size={26} color={colors.ink38} />
+              <Text style={styles.photoPlaceholderText}>Añadir foto de portada</Text>
+            </View>
+          )}
+          <View style={styles.photoEditBadge}>
+            <Ionicons name="camera" size={14} color={colors.background} />
           </View>
-        )}
-        <View style={styles.photoEditBadge}>
-          <Ionicons name="camera" size={14} color={colors.background} />
+        </Pressable>
+
+        <Field label="Destino (ej. Japón, Roma…)" value={title} onChangeText={setTitle} placeholder="Japón" />
+        <Field label="País" value={country} onChangeText={setCountry} placeholder="Japón" />
+        <Field
+          label="Ciudades (opcional)"
+          value={destinationSummary}
+          onChangeText={setDestinationSummary}
+          placeholder="Tokyo · Kyoto · Osaka"
+        />
+        <DateField label="Fecha de inicio" value={startDate} onChange={setStartDate} />
+        <DateField label="Fecha de fin" value={endDate} onChange={setEndDate} />
+
+        {!!error && <Text style={styles.error}>{error}</Text>}
+
+        <Pressable
+          style={[styles.button, (!title || submitting) && { opacity: 0.5 }]}
+          onPress={onCreate}
+          disabled={!title || submitting}
+        >
+          <Text style={styles.buttonText}>{submitting ? 'Creando…' : 'Crear viaje'}</Text>
+        </Pressable>
+
+        <Pressable style={styles.cancel} onPress={() => safeBack('/viajes')}>
+          <Text style={styles.cancelText}>Cancelar</Text>
+        </Pressable>
+      </ScrollView>
+
+      {showSuccess && (
+        <View style={styles.successOverlay} pointerEvents="none">
+          <Animated.Text style={[styles.successText, { opacity: textOpacity }]}>Viaje creado</Animated.Text>
+          <Animated.View style={[styles.successPlane, { transform: [{ translateX: planeX }] }]}>
+            <Ionicons name="airplane" size={40} color={colors.ink} />
+          </Animated.View>
         </View>
-      </Pressable>
-
-      <Field label="Destino (ej. Japón, Roma…)" value={title} onChangeText={setTitle} placeholder="Japón" />
-      <Field label="País" value={country} onChangeText={setCountry} placeholder="Japón" />
-      <Field
-        label="Ciudades (opcional)"
-        value={destinationSummary}
-        onChangeText={setDestinationSummary}
-        placeholder="Tokyo · Kyoto · Osaka"
-      />
-      <Field label="Fecha de inicio (AAAA-MM-DD)" value={startDate} onChangeText={setStartDate} placeholder="2026-09-12" />
-      <Field label="Fecha de fin (AAAA-MM-DD)" value={endDate} onChangeText={setEndDate} placeholder="2026-09-18" />
-
-      {!!error && <Text style={styles.error}>{error}</Text>}
-
-      <Pressable
-        style={[styles.button, (!title || submitting) && { opacity: 0.5 }]}
-        onPress={onCreate}
-        disabled={!title || submitting}
-      >
-        <Text style={styles.buttonText}>{submitting ? 'Creando…' : 'Crear viaje'}</Text>
-      </Pressable>
-
-      <Pressable style={styles.cancel} onPress={() => safeBack('/viajes')}>
-        <Text style={styles.cancelText}>Cancelar</Text>
-      </Pressable>
-    </ScrollView>
+      )}
+    </View>
   );
 }
 
@@ -201,4 +249,17 @@ const styles = StyleSheet.create({
   buttonText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 15.5 },
   cancel: { marginTop: spacing.md, alignItems: 'center' },
   cancelText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 14 },
+  successOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  successText: { fontFamily: fonts.serif, fontSize: 26, color: colors.ink, marginBottom: spacing.xl },
+  successPlane: { position: 'absolute', top: '46%' },
 });
