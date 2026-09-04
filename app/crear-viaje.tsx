@@ -7,6 +7,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
+import { DateField } from '@/components/DateField';
 
 export default function CrearViaje() {
   const { session } = useAuth();
@@ -107,8 +108,8 @@ export default function CrearViaje() {
         onChangeText={setDestinationSummary}
         placeholder="Tokyo · Kyoto · Osaka"
       />
-      <Field label="Fecha de inicio (AAAA-MM-DD)" value={startDate} onChangeText={setStartDate} placeholder="2026-09-12" />
-      <Field label="Fecha de fin (AAAA-MM-DD)" value={endDate} onChangeText={setEndDate} placeholder="2026-09-18" />
+      <DateField label="Fecha de inicio" value={startDate} onChange={setStartDate} />
+      <DateField label="Fecha de fin" value={endDate} onChange={setEndDate} />
 
       {!!error && <Text style={styles.error}>{error}</Text>}
 
