@@ -8,6 +8,8 @@ type AuthContextValue = {
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: string | null }>;
+  deleteAccount: () => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -47,6 +49,25 @@ export function AuthProvider({ children }: PropsWithChildren) {
       },
       signOut: async () => {
         await supabase.auth.signOut();
+      },
+      changePassword: async (currentPassword, newPassword) => {
+        const email = session?.user.email;
+        if (!email) return { error: 'No se pudo verificar la sesión.' };
+
+        const { error: verifyErr } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+        if (verifyErr) return { error: 'La contraseña actual no es correcta.' };
+
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        return { error: error?.message ?? null };
+      },
+      deleteAccount: async () => {
+        const { error } = await supabase.functions.invoke('delete-account');
+        if (error) {
+          const body = await error.context?.json?.().catch(() => null);
+          return { error: body?.error ?? error.message };
+        }
+        await supabase.auth.signOut();
+        return { error: null };
       },
     }),
     [session, loading]
