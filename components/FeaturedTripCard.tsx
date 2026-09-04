@@ -1,9 +1,10 @@
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
 import { flagForCountry } from '@/lib/flags';
+import { notify } from '@/lib/confirm';
 import type { Trip } from '@/lib/use-trips';
 
 function tripYear(trip: Trip) {
@@ -74,7 +75,7 @@ export function FeaturedTripCard({ trip, momentsCount }: { trip: Trip; momentsCo
             style={styles.reviveBtn}
             onPress={(e) => {
               e.stopPropagation();
-              Alert.alert('Revivir', 'El modo Revivir llegará pronto.');
+              notify('Revivir', 'El modo Revivir llegará pronto.');
             }}
           >
             <Ionicons name="play" size={9} color={colors.terracotta} />

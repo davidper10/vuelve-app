@@ -6,11 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { safeBack } from '@/lib/navigation';
+import { useConfirm } from '@/lib/confirm-context';
 import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
 
 export default function EditarViaje() {
+  const confirm = useConfirm();
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [title, setTitle] = useState('');
@@ -21,6 +23,7 @@ export default function EditarViaje() {
   const [cover, setCover] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!tripId) return;
@@ -99,6 +102,44 @@ export default function EditarViaje() {
     router.replace(`/viaje/${tripId}`);
   };
 
+  const onDelete = async () => {
+    if (!tripId || !trip) return;
+    const ok = await confirm({
+      title: 'Eliminar viaje',
+      message: `¿Seguro que quieres eliminar "${trip.title}"? Se borrarán también sus recuerdos, el mapa, el diario y los tags NFC vinculados. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      destructive: true,
+    });
+    if (ok) confirmDelete();
+  };
+
+  const confirmDelete = async () => {
+    if (!tripId) return;
+    setError(null);
+    setDeleting(true);
+
+    const { data: moments } = await supabase.from('moments').select('id').eq('trip_id', tripId);
+    const momentIds = (moments ?? []).map((m) => m.id);
+
+    await supabase.from('nfc_tags').delete().eq('trip_id', tripId);
+    if (momentIds.length) {
+      await supabase.from('nfc_tags').delete().in('moment_id', momentIds);
+    }
+
+    const { data: files } = await supabase.storage.from('memories').list(tripId);
+    if (files?.length) {
+      await supabase.storage.from('memories').remove(files.map((f) => `${tripId}/${f.name}`));
+    }
+
+    const { error: deleteErr } = await supabase.from('trips').delete().eq('id', tripId);
+    setDeleting(false);
+    if (deleteErr) {
+      setError(deleteErr.message);
+      return;
+    }
+    router.replace('/viajes');
+  };
+
   if (!trip) {
     return (
       <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
@@ -141,15 +182,24 @@ export default function EditarViaje() {
       {!!error && <Text style={styles.error}>{error}</Text>}
 
       <Pressable
-        style={[styles.button, (!title || submitting) && { opacity: 0.5 }]}
+        style={[styles.button, (!title || submitting || deleting) && { opacity: 0.5 }]}
         onPress={onSave}
-        disabled={!title || submitting}
+        disabled={!title || submitting || deleting}
       >
         <Text style={styles.buttonText}>{submitting ? 'Guardando…' : 'Guardar cambios'}</Text>
       </Pressable>
 
-      <Pressable style={styles.cancel} onPress={() => safeBack(`/viaje/${tripId}`)}>
+      <Pressable style={styles.cancel} onPress={() => safeBack(`/viaje/${tripId}`)} disabled={deleting}>
         <Text style={styles.cancelText}>Cancelar</Text>
+      </Pressable>
+
+      <Pressable
+        style={[styles.deleteButton, deleting && { opacity: 0.5 }]}
+        onPress={onDelete}
+        disabled={deleting}
+      >
+        <Ionicons name="trash-outline" size={16} color={colors.terracotta} />
+        <Text style={styles.deleteButtonText}>{deleting ? 'Eliminando…' : 'Eliminar viaje'}</Text>
       </Pressable>
     </ScrollView>
   );
@@ -229,4 +279,13 @@ const styles = StyleSheet.create({
   buttonText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 15.5 },
   cancel: { marginTop: spacing.md, alignItems: 'center' },
   cancelText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 14 },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.xl,
+    paddingVertical: 12,
+  },
+  deleteButtonText: { fontFamily: fonts.sansSemiBold, color: colors.terracotta, fontSize: 14 },
 });
