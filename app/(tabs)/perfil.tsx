@@ -1,26 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useTrips } from '@/lib/use-trips';
+import { useConfirm } from '@/lib/confirm-context';
 import { supabase } from '@/lib/supabase';
 
 export default function Perfil() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, deleteAccount } = useAuth();
+  const confirm = useConfirm();
   const { trips } = useTrips();
   const [momentsCount, setMomentsCount] = useState<number | null>(null);
+  const [fullName, setFullName] = useState('Viajero');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fullName = (session?.user.user_metadata?.full_name as string | undefined) ?? 'Viajero';
-  const avatarUrl = session?.user.user_metadata?.avatar_url as string | undefined;
   const initial = fullName.trim().charAt(0).toUpperCase() || 'A';
   const countries = new Set(trips.map((t) => t.country).filter(Boolean));
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
+    if (!session) return;
     supabase
-      .from('moments')
-      .select('id', { count: 'exact', head: true })
-      .then(({ count }) => setMomentsCount(count ?? 0));
-  }, []);
+      .from('profiles')
+      .select('full_name, avatar_url')
+      .eq('id', session.user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setFullName(data.full_name ?? 'Viajero');
+          setAvatarUrl(data.avatar_url);
+        }
+      });
+  }, [session]);
+
+  // Recarga al volver de "Editar perfil" para reflejar el nombre/foto nuevos.
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+      supabase
+        .from('moments')
+        .select('id', { count: 'exact', head: true })
+        .then(({ count }) => setMomentsCount(count ?? 0));
+    }, [loadProfile])
+  );
 
   const byYear = new Map<number, typeof trips>();
   for (const t of trips) {
@@ -30,6 +55,27 @@ export default function Perfil() {
     byYear.get(year)!.push(t);
   }
   const years = [...byYear.keys()].sort((a, b) => b - a);
+
+  const onDeleteAccount = async () => {
+    const ok = await confirm({
+      title: 'Eliminar cuenta',
+      message:
+        'Esto borrará tu cuenta y todos tus viajes, recuerdos, fotos, diario y tags NFC de forma permanente. No hay vuelta atrás: no podrás recuperar nada de esto.',
+      confirmLabel: 'Eliminar mi cuenta',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    setError(null);
+    setDeleting(true);
+    const { error: err } = await deleteAccount();
+    setDeleting(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    router.replace('/(auth)/sign-in');
+  };
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
@@ -83,8 +129,27 @@ export default function Perfil() {
         </View>
       )}
 
+      <View style={styles.actions}>
+        <Pressable style={styles.actionRow} onPress={() => router.push('/editar-perfil')}>
+          <Ionicons name="person-outline" size={17} color={colors.ink70} />
+          <Text style={styles.actionRowText}>Editar perfil</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.ink38} />
+        </Pressable>
+        <Pressable style={[styles.actionRow, styles.actionRowLast]} onPress={() => router.push('/cambiar-contrasena')}>
+          <Ionicons name="lock-closed-outline" size={17} color={colors.ink70} />
+          <Text style={styles.actionRowText}>Cambiar contraseña</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.ink38} />
+        </Pressable>
+      </View>
+
+      {!!error && <Text style={styles.error}>{error}</Text>}
+
       <Pressable style={styles.signOut} onPress={signOut}>
         <Text style={styles.signOutText}>Cerrar sesión</Text>
+      </Pressable>
+
+      <Pressable style={[styles.deleteAccount, deleting && { opacity: 0.5 }]} onPress={onDeleteAccount} disabled={deleting}>
+        <Text style={styles.deleteAccountText}>{deleting ? 'Eliminando cuenta…' : 'Eliminar cuenta'}</Text>
       </Pressable>
     </ScrollView>
   );
@@ -133,6 +198,25 @@ const styles = StyleSheet.create({
   },
   yearRowTitle: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink },
   yearRowDate: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.ink55 },
+  actions: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  actionRowLast: { borderBottomWidth: 0 },
+  actionRowText: { flex: 1, fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.ink },
+  error: { fontFamily: fonts.sansMedium, color: colors.terracotta, fontSize: 13, textAlign: 'center' },
   signOut: {
     alignSelf: 'center',
     paddingVertical: 12,
@@ -142,4 +226,6 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   signOutText: { fontFamily: fonts.sansBold, color: colors.ink70, fontSize: 14 },
+  deleteAccount: { alignSelf: 'center', paddingVertical: 8 },
+  deleteAccountText: { fontFamily: fonts.sansSemiBold, color: colors.terracotta, fontSize: 13 },
 });
