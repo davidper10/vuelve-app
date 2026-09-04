@@ -5,6 +5,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
+import { DateField } from '@/components/DateField';
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -42,16 +43,7 @@ export default function CrearDiario() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
       <Text style={styles.title}>Nueva nota de diario</Text>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>Fecha (AAAA-MM-DD)</Text>
-        <TextInput
-          style={styles.input}
-          value={entryDate}
-          onChangeText={setEntryDate}
-          placeholder="2026-09-14"
-          placeholderTextColor={colors.ink38}
-        />
-      </View>
+      <DateField label="Fecha" value={entryDate} onChange={setEntryDate} />
 
       <View style={styles.field}>
         <Text style={styles.label}>Nota</Text>
