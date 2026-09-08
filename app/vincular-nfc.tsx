@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import NfcManager, { Ndef, NfcTech } from 'react-native-nfc-manager';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
@@ -11,6 +11,7 @@ import { safeBack } from '@/lib/navigation';
 import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
+type NfcTagRow = Tables<'nfc_tags'>;
 type Step = 'checking' | 'unsupported' | 'target' | 'scan' | 'done';
 type LinkType = 'trip' | 'moment';
 
@@ -24,6 +25,7 @@ function randomSlug(length = 6) {
 export default function VincularNfc() {
   const { session } = useAuth();
   const { trips } = useTrips();
+  const { tagId } = useLocalSearchParams<{ tagId?: string }>();
   const [step, setStep] = useState<Step>('checking');
   const [linkType, setLinkType] = useState<LinkType>('trip');
   const [label, setLabel] = useState('');
@@ -33,7 +35,12 @@ export default function VincularNfc() {
   const [error, setError] = useState<string | null>(null);
   const [writing, setWriting] = useState(false);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
+  const [rewriteTag, setRewriteTag] = useState<NfcTagRow | null>(null);
 
+  // Si llegamos con ?tagId=..., estamos reescribiendo el sticker físico de
+  // un NFC ya existente (mismo slug/fila en la BD) en vez de crear uno
+  // nuevo: nos saltamos el paso de elegir destino y vamos directas a
+  // escanear.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -44,7 +51,19 @@ export default function VincularNfc() {
           return;
         }
         await NfcManager.start();
-        if (!cancelled) setStep('target');
+        if (cancelled) return;
+
+        if (tagId) {
+          const { data } = await supabase.from('nfc_tags').select('*').eq('id', tagId).single();
+          if (cancelled) return;
+          if (data) {
+            setRewriteTag(data);
+            setLabel(data.label);
+            setStep('scan');
+            return;
+          }
+        }
+        setStep('target');
       } catch {
         // Esperado en Expo Go / web: react-native-nfc-manager necesita un
         // dev client o build nativo (npx expo run:ios | run:android, o EAS).
@@ -55,7 +74,7 @@ export default function VincularNfc() {
       cancelled = true;
       NfcManager.cancelTechnologyRequest().catch(() => {});
     };
-  }, []);
+  }, [tagId]);
 
   useEffect(() => {
     if (linkType !== 'moment' || !tripId) {
@@ -74,11 +93,12 @@ export default function VincularNfc() {
   const canContinue = !!label.trim() && (linkType === 'trip' ? !!tripId : !!tripId && !!momentId);
 
   const writeAndSave = async () => {
-    if (!session || !canContinue) return;
+    if (!session) return;
+    if (!rewriteTag && !canContinue) return;
     setError(null);
     setWriting(true);
 
-    const slug = randomSlug();
+    const slug = rewriteTag ? rewriteTag.public_slug : randomSlug();
     const url = `${PUBLIC_BASE_URL}/${slug}`;
 
     try {
@@ -87,16 +107,18 @@ export default function VincularNfc() {
       await NfcManager.ndefHandler.writeNdefMessage(bytes);
       const tag = await NfcManager.getTag();
 
-      const { error: err } = await supabase.from('nfc_tags').insert({
-        owner_id: session.user.id,
-        label: label.trim(),
-        tag_uid: tag?.id ?? null,
-        link_type: linkType,
-        trip_id: tripId,
-        moment_id: linkType === 'moment' ? momentId : null,
-        public_slug: slug,
-        status: 'active',
-      });
+      const { error: err } = rewriteTag
+        ? await supabase.from('nfc_tags').update({ tag_uid: tag?.id ?? null }).eq('id', rewriteTag.id)
+        : await supabase.from('nfc_tags').insert({
+            owner_id: session.user.id,
+            label: label.trim(),
+            tag_uid: tag?.id ?? null,
+            link_type: linkType,
+            trip_id: tripId,
+            moment_id: linkType === 'moment' ? momentId : null,
+            public_slug: slug,
+            status: 'active',
+          });
 
       if (err) throw err;
 
@@ -144,14 +166,16 @@ export default function VincularNfc() {
         </View>
         <Text style={styles.title}>Acerca el sticker NFC</Text>
         <Text style={styles.body}>
-          Mantén el sticker o imán junto a la parte superior del teléfono mientras se escribe.
+          {rewriteTag
+            ? `Vas a reescribir "${rewriteTag.label}" con la URL actual. Mantén el sticker junto al teléfono mientras se escribe.`
+            : 'Mantén el sticker o imán junto a la parte superior del teléfono mientras se escribe.'}
         </Text>
         {!!error && <Text style={styles.error}>{error}</Text>}
         <Pressable style={[styles.button, writing && { opacity: 0.6 }]} onPress={writeAndSave} disabled={writing}>
           <Text style={styles.buttonText}>{writing ? 'Escribiendo…' : 'Escribir NFC'}</Text>
         </Pressable>
-        <Pressable style={styles.cancel} onPress={() => setStep('target')}>
-          <Text style={styles.cancelText}>Atrás</Text>
+        <Pressable style={styles.cancel} onPress={() => (rewriteTag ? safeBack('/nfc') : setStep('target'))}>
+          <Text style={styles.cancelText}>{rewriteTag ? 'Cancelar' : 'Atrás'}</Text>
         </Pressable>
       </View>
     );
@@ -163,7 +187,7 @@ export default function VincularNfc() {
         <View style={styles.doneIcon}>
           <Ionicons name="checkmark" size={28} color={colors.background} />
         </View>
-        <Text style={styles.title}>NFC vinculado</Text>
+        <Text style={styles.title}>{rewriteTag ? 'Sticker reescrito' : 'NFC vinculado'}</Text>
         <Text style={styles.body}>
           "{label}" ya está guardado y activo.{'\n'}
           Enlace: {PUBLIC_BASE_URL}/{savedSlug}

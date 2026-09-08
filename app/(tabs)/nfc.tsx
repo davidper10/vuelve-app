@@ -250,6 +250,14 @@ export default function Nfc() {
                   <Text style={styles.secondaryBtnText}>Reconfigurar destino</Text>
                 </Pressable>
 
+                <Pressable
+                  style={styles.secondaryBtn}
+                  onPress={() => router.push(`/vincular-nfc?tagId=${selected.id}`)}
+                >
+                  <Ionicons name="radio-outline" size={16} color={colors.sageDark} />
+                  <Text style={styles.secondaryBtnText}>Reescribir sticker físico</Text>
+                </Pressable>
+
                 <Pressable style={styles.secondaryBtn} onPress={onDelete}>
                   <Ionicons name="trash-outline" size={16} color={colors.terracotta} />
                   <Text style={[styles.secondaryBtnText, { color: colors.terracotta }]}>Eliminar</Text>
