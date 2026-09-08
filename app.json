@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.vuelveapp.mobile",
-      "associatedDomains": ["applinks:savetrip.vercel.app"]
+      "associatedDomains": ["applinks:savetrip.vercel.app?mode=developer"]
     },
     "android": {
       "package": "com.vuelveapp.mobile",
