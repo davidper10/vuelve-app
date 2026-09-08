@@ -5,7 +5,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
 // Punto de entrada al tocar un NFC físico o abrir el enlace público
-// (app.json ya registra https://vuelve-app.example.com/m/* y el scheme
+// (app.json ya registra https://savetrip.vercel.app/m/* y el scheme
 // vuelve:// para que el sistema operativo abra esta ruta). Resuelve el
 // public_slug a su viaje o momento y navega ahí; si el usuario no tiene
 // acceso, esa pantalla mostrará su propio estado vacío/de carga.

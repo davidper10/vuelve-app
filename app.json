@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.vuelveapp.mobile",
-      "associatedDomains": ["applinks:vuelve-app.example.com"]
+      "associatedDomains": ["applinks:savetrip.vercel.app"]
     },
     "android": {
       "package": "com.vuelveapp.mobile",
@@ -26,12 +26,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "vuelve-app.example.com",
+              "host": "savetrip.vercel.app",
               "pathPrefix": "/m"
             },
             {
               "scheme": "https",
-              "host": "vuelve-app.example.com",
+              "host": "savetrip.vercel.app",
               "pathPrefix": "/unirse"
             }
           ],

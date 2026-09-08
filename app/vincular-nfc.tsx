@@ -14,7 +14,7 @@ type Moment = Tables<'moments'>;
 type Step = 'checking' | 'unsupported' | 'target' | 'scan' | 'done';
 type LinkType = 'trip' | 'moment';
 
-const PUBLIC_BASE_URL = 'https://vuelve-app.example.com/m';
+const PUBLIC_BASE_URL = 'https://savetrip.vercel.app/m';
 
 function randomSlug(length = 6) {
   const chars = 'abcdefghijkmnpqrstuvwxyz23456789';

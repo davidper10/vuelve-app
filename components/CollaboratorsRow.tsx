@@ -7,7 +7,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 
-const PUBLIC_BASE_URL = 'https://vuelve-app.example.com/unirse';
+const PUBLIC_BASE_URL = 'https://savetrip.vercel.app/unirse';
 
 function randomSlug(length = 8) {
   const chars = 'abcdefghijkmnpqrstuvwxyz23456789';

@@ -13,7 +13,7 @@ type NfcTag = Tables<'nfc_tags'> & {
   moments: { title: string } | null;
 };
 
-const PUBLIC_BASE_URL = 'https://vuelve-app.example.com/m';
+const PUBLIC_BASE_URL = 'https://savetrip.vercel.app/m';
 
 export default function Nfc() {
   const confirm = useConfirm();
