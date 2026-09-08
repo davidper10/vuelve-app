@@ -1,11 +1,12 @@
-import { useCallback, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useConfirm } from '@/lib/confirm-context';
+import { useTrips } from '@/lib/use-trips';
 import type { Tables } from '@/lib/database.types';
 
 type NfcTag = Tables<'nfc_tags'> & {
@@ -13,16 +14,26 @@ type NfcTag = Tables<'nfc_tags'> & {
   moments: { title: string } | null;
 };
 
+type Moment = Tables<'moments'>;
+type LinkType = 'trip' | 'moment';
+
 const PUBLIC_BASE_URL = 'https://savetrip.vercel.app/m';
 
 export default function Nfc() {
   const confirm = useConfirm();
+  const { trips } = useTrips();
   const [tags, setTags] = useState<NfcTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<NfcTag | null>(null);
   const [label, setLabel] = useState('');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [reconfiguring, setReconfiguring] = useState(false);
+  const [newLinkType, setNewLinkType] = useState<LinkType>('trip');
+  const [newTripId, setNewTripId] = useState<string | null>(null);
+  const [newMoments, setNewMoments] = useState<Moment[]>([]);
+  const [newMomentId, setNewMomentId] = useState<string | null>(null);
+  const [reconfiguringSaving, setReconfiguringSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,9 +56,51 @@ export default function Nfc() {
     setSelected(tag);
     setLabel(tag.label);
     setCopied(false);
+    setReconfiguring(false);
   };
 
-  const closeModal = () => setSelected(null);
+  const closeModal = () => {
+    setSelected(null);
+    setReconfiguring(false);
+  };
+
+  const startReconfigure = (tag: NfcTag) => {
+    setNewLinkType(tag.link_type === 'moment' ? 'moment' : 'trip');
+    setNewTripId(tag.trip_id);
+    setNewMomentId(tag.moment_id);
+    setReconfiguring(true);
+  };
+
+  useEffect(() => {
+    if (newLinkType !== 'moment' || !newTripId) {
+      setNewMoments([]);
+      return;
+    }
+    supabase
+      .from('moments')
+      .select('*')
+      .eq('trip_id', newTripId)
+      .order('occurred_at', { ascending: true })
+      .then(({ data }) => setNewMoments(data ?? []));
+  }, [newLinkType, newTripId]);
+
+  const canSaveReconfigure = newLinkType === 'trip' ? !!newTripId : !!newTripId && !!newMomentId;
+
+  const saveReconfigure = async () => {
+    if (!selected || !canSaveReconfigure) return;
+    setReconfiguringSaving(true);
+    await supabase
+      .from('nfc_tags')
+      .update({
+        link_type: newLinkType,
+        trip_id: newTripId,
+        moment_id: newLinkType === 'moment' ? newMomentId : null,
+      })
+      .eq('id', selected.id);
+    setReconfiguringSaving(false);
+    closeModal();
+    load();
+  };
 
   const saveLabel = async () => {
     if (!selected || !label.trim()) return;
@@ -163,7 +216,7 @@ export default function Nfc() {
       <Modal visible={!!selected} transparent animationType="fade" onRequestClose={closeModal}>
         <View style={styles.overlay}>
           <View style={styles.modalCard}>
-            {selected && (
+            {selected && !reconfiguring && (
               <>
                 <Text style={styles.modalTitle}>Editar NFC</Text>
                 <Text style={styles.modalTarget}>
@@ -192,6 +245,11 @@ export default function Nfc() {
                   <Text style={styles.secondaryBtnText}>{copied ? 'Enlace copiado' : 'Copiar enlace'}</Text>
                 </Pressable>
 
+                <Pressable style={styles.secondaryBtn} onPress={() => startReconfigure(selected)}>
+                  <Ionicons name="swap-horizontal-outline" size={16} color={colors.sageDark} />
+                  <Text style={styles.secondaryBtnText}>Reconfigurar destino</Text>
+                </Pressable>
+
                 <Pressable style={styles.secondaryBtn} onPress={onDelete}>
                   <Ionicons name="trash-outline" size={16} color={colors.terracotta} />
                   <Text style={[styles.secondaryBtnText, { color: colors.terracotta }]}>Eliminar</Text>
@@ -201,6 +259,79 @@ export default function Nfc() {
                   <Text style={styles.cancelBtnText}>Cerrar</Text>
                 </Pressable>
               </>
+            )}
+
+            {selected && reconfiguring && (
+              <ScrollView style={styles.reconfigureScroll}>
+                <Text style={styles.modalTitle}>Reconfigurar "{selected.label}"</Text>
+                <Text style={styles.modalTarget}>
+                  El sticker físico no cambia — solo cambia a dónde apunta el enlace.
+                </Text>
+
+                <View style={styles.typeRow}>
+                  <Pressable
+                    style={[styles.typeOption, newLinkType === 'trip' && styles.typeOptionOn]}
+                    onPress={() => setNewLinkType('trip')}
+                  >
+                    <Text style={[styles.typeOptionText, newLinkType === 'trip' && styles.typeOptionTextOn]}>
+                      Un viaje entero
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.typeOption, newLinkType === 'moment' && styles.typeOptionOn]}
+                    onPress={() => setNewLinkType('moment')}
+                  >
+                    <Text style={[styles.typeOptionText, newLinkType === 'moment' && styles.typeOptionTextOn]}>
+                      Un momento
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <Text style={[styles.modalTarget, { marginTop: spacing.md }]}>Viaje</Text>
+                {trips.map((t) => (
+                  <Pressable
+                    key={t.id}
+                    style={[styles.tripOption, newTripId === t.id && styles.tripOptionOn]}
+                    onPress={() => {
+                      setNewTripId(t.id);
+                      setNewMomentId(null);
+                    }}
+                  >
+                    <Text style={styles.tripOptionText}>{t.title}</Text>
+                  </Pressable>
+                ))}
+
+                {newLinkType === 'moment' && newTripId && (
+                  <>
+                    <Text style={[styles.modalTarget, { marginTop: spacing.md }]}>Momento</Text>
+                    {newMoments.length === 0 ? (
+                      <Text style={styles.modalTarget}>Este viaje todavía no tiene momentos guardados.</Text>
+                    ) : (
+                      newMoments.map((m) => (
+                        <Pressable
+                          key={m.id}
+                          style={[styles.tripOption, newMomentId === m.id && styles.tripOptionOn]}
+                          onPress={() => setNewMomentId(m.id)}
+                        >
+                          <Text style={styles.tripOptionText}>{m.title}</Text>
+                        </Pressable>
+                      ))
+                    )}
+                  </>
+                )}
+
+                <Pressable
+                  style={[styles.modalBtn, (!canSaveReconfigure || reconfiguringSaving) && { opacity: 0.5 }]}
+                  onPress={saveReconfigure}
+                  disabled={!canSaveReconfigure || reconfiguringSaving}
+                >
+                  <Text style={styles.modalBtnText}>{reconfiguringSaving ? 'Guardando…' : 'Guardar nuevo destino'}</Text>
+                </Pressable>
+
+                <Pressable style={styles.cancelBtn} onPress={() => setReconfiguring(false)}>
+                  <Text style={styles.cancelBtnText}>Cancelar</Text>
+                </Pressable>
+              </ScrollView>
             )}
           </View>
         </View>
@@ -310,4 +441,28 @@ const styles = StyleSheet.create({
   secondaryBtnText: { fontFamily: fonts.sansSemiBold, fontSize: 13.5, color: colors.sageDark },
   cancelBtn: { alignItems: 'center', paddingVertical: 8 },
   cancelBtnText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 13 },
+  reconfigureScroll: { maxHeight: '80%' },
+  typeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  typeOption: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    borderRadius: radii.sm,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  typeOptionOn: { borderColor: colors.sage, backgroundColor: colors.sageLight },
+  typeOptionText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink55 },
+  typeOptionTextOn: { color: colors.sageDark },
+  tripOption: {
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    borderRadius: radii.sm,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  tripOptionOn: { borderColor: colors.sage, backgroundColor: colors.sand },
+  tripOptionText: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
 });
