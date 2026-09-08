@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "68JZB6568K.com.vuelveapp.mobile",
+        "paths": ["/m/*", "/unirse/*"]
+      }
+    ]
+  }
+}

@@ -9,7 +9,8 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.vuelveapp.mobile"
+      "bundleIdentifier": "com.vuelveapp.mobile",
+      "associatedDomains": ["applinks:savetrip.vercel.app"]
     },
     "android": {
       "package": "com.vuelveapp.mobile",
@@ -25,12 +26,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "vuelve-app.example.com",
+              "host": "savetrip.vercel.app",
               "pathPrefix": "/m"
             },
             {
               "scheme": "https",
-              "host": "vuelve-app.example.com",
+              "host": "savetrip.vercel.app",
               "pathPrefix": "/unirse"
             }
           ],
@@ -68,6 +69,14 @@
         "expo-image-picker",
         {
           "photosPermission": "Vuelve usa tus fotos para añadirlas a los recuerdos de tus viajes."
+        }
+      ],
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermission": "Vuelve usa NFC para vincular tus recuerdos a objetos físicos.",
+          "selectIdentifiers": [],
+          "systemCodes": []
         }
       ],
       "expo-web-browser",
