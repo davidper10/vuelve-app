@@ -17,10 +17,8 @@ import {
 } from '@expo-google-fonts/dm-serif-display';
 import { AuthProvider } from '@/lib/auth-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
-import { BrandLoadingScreen } from '@/components/BrandLoadingScreen';
+import { WelcomeOverview } from '@/components/WelcomeOverview';
 import { colors } from '@/constants/theme';
-
-const MIN_BRAND_SCREEN_MS = 1800;
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -36,16 +34,11 @@ export default function RootLayout() {
     DMSerifDisplay_400Regular_Italic,
   });
   const fontsLoaded = interLoaded && serifLoaded;
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded]);
-
-  useEffect(() => {
-    const t = setTimeout(() => setMinTimeElapsed(true), MIN_BRAND_SCREEN_MS);
-    return () => clearTimeout(t);
-  }, []);
 
   if (!fontsLoaded) return null;
 
@@ -54,7 +47,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <ConfirmProvider>
-            {minTimeElapsed ? (
+            {welcomeDismissed ? (
               <Stack
                 screenOptions={{
                   headerShown: false,
@@ -70,7 +63,7 @@ export default function RootLayout() {
                 <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
               </Stack>
             ) : (
-              <BrandLoadingScreen />
+              <WelcomeOverview onContinue={() => setWelcomeDismissed(true)} />
             )}
           </ConfirmProvider>
         </AuthProvider>
