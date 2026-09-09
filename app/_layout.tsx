@@ -18,7 +18,10 @@ import {
 import { AuthProvider } from '@/lib/auth-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
 import { WelcomeOverview } from '@/components/WelcomeOverview';
+import { OnboardingCarousel } from '@/components/OnboardingCarousel';
 import { colors } from '@/constants/theme';
+
+type Stage = 'welcome' | 'onboarding' | 'app';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -34,7 +37,7 @@ export default function RootLayout() {
     DMSerifDisplay_400Regular_Italic,
   });
   const fontsLoaded = interLoaded && serifLoaded;
-  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [stage, setStage] = useState<Stage>('welcome');
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
@@ -47,7 +50,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <ConfirmProvider>
-            {welcomeDismissed ? (
+            {stage === 'app' && (
               <Stack
                 screenOptions={{
                   headerShown: false,
@@ -62,9 +65,9 @@ export default function RootLayout() {
                 <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
                 <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
               </Stack>
-            ) : (
-              <WelcomeOverview onContinue={() => setWelcomeDismissed(true)} />
             )}
+            {stage === 'welcome' && <WelcomeOverview onContinue={() => setStage('onboarding')} />}
+            {stage === 'onboarding' && <OnboardingCarousel onFinish={() => setStage('app')} />}
           </ConfirmProvider>
         </AuthProvider>
       </SafeAreaProvider>
