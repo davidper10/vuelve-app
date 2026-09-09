@@ -211,6 +211,7 @@ export type Database = {
       nfc_tags: {
         Row: {
           created_at: string
+          icon: string | null
           id: string
           label: string
           link_type: string
@@ -223,6 +224,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          icon?: string | null
           id?: string
           label: string
           link_type: string
@@ -235,6 +237,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          icon?: string | null
           id?: string
           label?: string
           link_type?: string

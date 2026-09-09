@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useTrips } from '@/lib/use-trips';
 import { safeBack } from '@/lib/navigation';
+import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
@@ -29,6 +30,7 @@ export default function VincularNfc() {
   const [step, setStep] = useState<Step>('checking');
   const [linkType, setLinkType] = useState<LinkType>('trip');
   const [label, setLabel] = useState('');
+  const [icon, setIcon] = useState<string | null>(null);
   const [tripId, setTripId] = useState<string | null>(null);
   const [moments, setMoments] = useState<Moment[]>([]);
   const [momentId, setMomentId] = useState<string | null>(null);
@@ -112,6 +114,7 @@ export default function VincularNfc() {
         : await supabase.from('nfc_tags').insert({
             owner_id: session.user.id,
             label: label.trim(),
+            icon,
             tag_uid: tag?.id ?? null,
             link_type: linkType,
             trip_id: tripId,
@@ -211,6 +214,9 @@ export default function VincularNfc() {
         placeholder="Imán Japón"
         placeholderTextColor={colors.ink38}
       />
+
+      <Text style={[styles.label, { marginTop: spacing.md }]}>Icono (opcional)</Text>
+      <EmojiPicker value={icon} onChange={setIcon} />
 
       <View style={styles.typeRow}>
         <Pressable

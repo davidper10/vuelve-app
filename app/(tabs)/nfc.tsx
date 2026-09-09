@@ -7,6 +7,7 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useConfirm } from '@/lib/confirm-context';
 import { useTrips } from '@/lib/use-trips';
+import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Tables } from '@/lib/database.types';
 
 type NfcTag = Tables<'nfc_tags'> & {
@@ -26,6 +27,7 @@ export default function Nfc() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<NfcTag | null>(null);
   const [label, setLabel] = useState('');
+  const [icon, setIcon] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [reconfiguring, setReconfiguring] = useState(false);
@@ -55,6 +57,7 @@ export default function Nfc() {
   const openTag = (tag: NfcTag) => {
     setSelected(tag);
     setLabel(tag.label);
+    setIcon(tag.icon);
     setCopied(false);
     setReconfiguring(false);
   };
@@ -105,7 +108,7 @@ export default function Nfc() {
   const saveLabel = async () => {
     if (!selected || !label.trim()) return;
     setSaving(true);
-    await supabase.from('nfc_tags').update({ label: label.trim() }).eq('id', selected.id);
+    await supabase.from('nfc_tags').update({ label: label.trim(), icon }).eq('id', selected.id);
     setSaving(false);
     closeModal();
     load();
@@ -176,7 +179,11 @@ export default function Nfc() {
         renderItem={({ item }) => (
           <Pressable style={styles.card} onPress={() => openTag(item)}>
             <View style={styles.icon}>
-              <Ionicons name={item.link_type === 'moment' ? 'image-outline' : 'radio-outline'} size={20} color={colors.sage} />
+              {item.icon ? (
+                <Text style={styles.iconEmoji}>{item.icon}</Text>
+              ) : (
+                <Ionicons name={item.link_type === 'moment' ? 'image-outline' : 'radio-outline'} size={20} color={colors.sage} />
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{item.label}</Text>
@@ -225,8 +232,10 @@ export default function Nfc() {
 
                 <TextInput style={styles.input} value={label} onChangeText={setLabel} placeholderTextColor={colors.ink38} />
 
+                <EmojiPicker value={icon} onChange={setIcon} />
+
                 <Pressable style={styles.modalBtn} onPress={saveLabel} disabled={saving}>
-                  <Text style={styles.modalBtnText}>{saving ? 'Guardando…' : 'Guardar nombre'}</Text>
+                  <Text style={styles.modalBtnText}>{saving ? 'Guardando…' : 'Guardar cambios'}</Text>
                 </Pressable>
 
                 <Pressable style={styles.secondaryBtn} onPress={toggleStatus}>
@@ -383,6 +392,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconEmoji: { fontSize: 22 },
   cardTitle: { fontFamily: fonts.sansBold, fontSize: 16, color: colors.ink },
   cardTarget: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink55, marginTop: 1 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' },
