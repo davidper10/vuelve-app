@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -17,7 +17,10 @@ import {
 } from '@expo-google-fonts/dm-serif-display';
 import { AuthProvider } from '@/lib/auth-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
+import { BrandLoadingScreen } from '@/components/BrandLoadingScreen';
 import { colors } from '@/constants/theme';
+
+const MIN_BRAND_SCREEN_MS = 1800;
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -33,10 +36,16 @@ export default function RootLayout() {
     DMSerifDisplay_400Regular_Italic,
   });
   const fontsLoaded = interLoaded && serifLoaded;
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimeElapsed(true), MIN_BRAND_SCREEN_MS);
+    return () => clearTimeout(t);
+  }, []);
 
   if (!fontsLoaded) return null;
 
@@ -45,20 +54,24 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <ConfirmProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.background },
-              }}
-            >
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="viaje/[id]" />
-              <Stack.Screen name="momento/[id]" />
-              <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
-            </Stack>
+            {minTimeElapsed ? (
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.background },
+                }}
+              >
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="viaje/[id]" />
+                <Stack.Screen name="momento/[id]" />
+                <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
+              </Stack>
+            ) : (
+              <BrandLoadingScreen />
+            )}
           </ConfirmProvider>
         </AuthProvider>
       </SafeAreaProvider>
