@@ -4,6 +4,7 @@ import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { markOnboardingPending } from '@/lib/onboarding';
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 
@@ -28,6 +29,7 @@ export default function SignUp() {
     if (err) {
       setError(err);
     } else {
+      await markOnboardingPending();
       setDone(true);
     }
   };

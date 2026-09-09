@@ -18,10 +18,9 @@ import {
 import { AuthProvider } from '@/lib/auth-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
 import { WelcomeOverview } from '@/components/WelcomeOverview';
-import { OnboardingCarousel } from '@/components/OnboardingCarousel';
 import { colors } from '@/constants/theme';
 
-type Stage = 'welcome' | 'onboarding' | 'app';
+type Stage = 'welcome' | 'app';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -66,8 +65,7 @@ export default function RootLayout() {
                 <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
               </Stack>
             )}
-            {stage === 'welcome' && <WelcomeOverview onContinue={() => setStage('onboarding')} />}
-            {stage === 'onboarding' && <OnboardingCarousel onFinish={() => setStage('app')} />}
+            {stage === 'welcome' && <WelcomeOverview onContinue={() => setStage('app')} />}
           </ConfirmProvider>
         </AuthProvider>
       </SafeAreaProvider>
