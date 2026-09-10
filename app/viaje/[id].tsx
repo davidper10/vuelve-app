@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +28,13 @@ function formatDateRange(start: string | null, end: string | null) {
   if (!end) return s.toLocaleDateString('es-ES', opts);
   const e = new Date(end);
   return `${s.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} – ${e.toLocaleDateString('es-ES', opts)}`;
+}
+
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  const time = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return `${date} · ${time}`;
 }
 
 function tripDaysCount(start: string | null, end: string | null) {
@@ -77,6 +84,7 @@ export default function ViajeDetail() {
   const [memoriesCount, setMemoriesCount] = useState(0);
   const [videosCount, setVideosCount] = useState(0);
   const [tab, setTab] = useState<Tab>((initialTab as Tab) || 'recuerdos');
+  const [nfcHowOpen, setNfcHowOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -313,39 +321,100 @@ export default function ViajeDetail() {
 
           {tab === 'nfc' && (
             <>
-              {nfcTags.length > 0 && (
-                <View style={styles.nfcExplainer}>
-                  <View style={styles.nfcExplainerTitleRow}>
-                    <Ionicons name="radio" size={13} color={colors.sageDark} />
-                    <Text style={styles.nfcExplainerTitle}>NFC vinculado a este viaje</Text>
-                  </View>
+              <View style={styles.nfcExplainer}>
+                <View style={styles.nfcExplainerIconWrap}>
+                  <Ionicons name="wifi" size={24} color={colors.sageDark} style={styles.nfcExplainerIcon} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.nfcExplainerTitle}>NFC vinculado a este viaje</Text>
                   <Text style={styles.nfcExplainerBody}>
                     Cualquier persona que acerque su móvil al objeto físico accederá a este viaje.
                   </Text>
+                  <Pressable style={styles.nfcHowRow} onPress={() => setNfcHowOpen(true)}>
+                    <Text style={styles.nfcHowText}>¿Cómo funciona?</Text>
+                    <Ionicons name="chevron-forward" size={13} color={colors.sageDark} />
+                  </Pressable>
                 </View>
-              )}
+              </View>
+
+              <View style={styles.nfcSectionHeader}>
+                <Text style={styles.nfcSectionTitle}>Objetos vinculados</Text>
+                <View style={styles.nfcCountPill}>
+                  <Text style={styles.nfcCountText}>{nfcTags.length}</Text>
+                </View>
+              </View>
 
               {nfcTags.length === 0 ? (
                 <Text style={styles.emptyText}>Este viaje no tiene ningún NFC vinculado todavía.</Text>
               ) : (
                 nfcTags.map((n) => (
-                  <View key={n.id} style={styles.nfcCard}>
+                  <Pressable
+                    key={n.id}
+                    style={styles.nfcCard}
+                    onPress={() => router.push(`/vincular-nfc?tagId=${n.id}`)}
+                  >
+                    <View style={styles.nfcCardIcon}>
+                      {n.icon ? (
+                        <Text style={styles.nfcCardIconEmoji}>{n.icon}</Text>
+                      ) : (
+                        <Ionicons
+                          name={n.link_type === 'moment' ? 'image-outline' : 'radio-outline'}
+                          size={20}
+                          color={colors.sage}
+                        />
+                      )}
+                    </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.momentTitle}>{n.label}</Text>
                       <Text style={styles.momentSub}>ID: {n.tag_uid ?? n.public_slug}</Text>
-                    </View>
-                    <View
-                      style={[styles.statusPill, n.status === 'active' ? styles.statusPillActive : styles.statusPillInactive]}
-                    >
-                      <Text
-                        style={[styles.statusText, n.status === 'active' ? styles.statusTextActive : styles.statusTextInactive]}
+                      <View
+                        style={[
+                          styles.statusPill,
+                          n.status === 'active' ? styles.statusPillActive : styles.statusPillInactive,
+                          styles.nfcCardStatusPill,
+                        ]}
                       >
-                        {n.status === 'active' ? 'Activo' : 'Inactivo'}
-                      </Text>
+                        <Text
+                          style={[styles.statusText, n.status === 'active' ? styles.statusTextActive : styles.statusTextInactive]}
+                        >
+                          {n.status === 'active' ? 'Activo' : 'Inactivo'}
+                        </Text>
+                      </View>
+                      <Text style={styles.nfcCardMeta}>Vinculado el {formatDateTime(n.created_at)}</Text>
                     </View>
-                  </View>
+                    <View style={styles.nfcCardRightCol}>
+                      <Pressable
+                        hitSlop={8}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          router.push(`/vincular-nfc?tagId=${n.id}`);
+                        }}
+                      >
+                        <Ionicons name="ellipsis-horizontal" size={16} color={colors.ink38} />
+                      </Pressable>
+                      <Ionicons name="chevron-forward" size={16} color={colors.ink38} />
+                    </View>
+                  </Pressable>
                 ))
               )}
+
+              <View style={styles.nfcOutroCard}>
+                <Image
+                  source={require('../../assets/mascota/saludo.png')}
+                  style={styles.nfcOutroMascot}
+                  resizeMode="contain"
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.nfcOutroTitle}>Un pequeño objeto para grandes recuerdos</Text>
+                  <Text style={styles.nfcOutroBody}>
+                    Vincula más objetos NFC y comparte este viaje con quien tú quieras.
+                  </Text>
+                  <Pressable style={styles.nfcOutroButton} onPress={() => router.push('/vincular-nfc')}>
+                    <Ionicons name="add" size={15} color={colors.sageDark} />
+                    <Text style={styles.nfcOutroButtonText}>Vincular nuevo objeto</Text>
+                  </Pressable>
+                </View>
+              </View>
             </>
           )}
         </View>
@@ -362,6 +431,21 @@ export default function ViajeDetail() {
           <Ionicons name="add" size={26} color={colors.background} />
         </Pressable>
       )}
+
+      <Modal visible={nfcHowOpen} transparent animationType="fade" onRequestClose={() => setNfcHowOpen(false)}>
+        <Pressable style={styles.nfcHowOverlay} onPress={() => setNfcHowOpen(false)}>
+          <Pressable style={styles.nfcHowCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.nfcHowTitle}>¿Cómo funciona el NFC?</Text>
+            <Text style={styles.nfcHowBody}>
+              Pega un sticker NFC en un álbum, una postal o cualquier objeto físico y vincúlalo a este viaje.
+              Al acercar un móvil con NFC activado, se abrirá al instante este viaje, sin instalar nada.
+            </Text>
+            <Pressable style={styles.nfcHowClose} onPress={() => setNfcHowOpen(false)}>
+              <Text style={styles.nfcHowCloseText}>Entendido</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -486,13 +570,41 @@ const styles = StyleSheet.create({
   diaryAuthorInitial: { fontFamily: fonts.sansBold, fontSize: 9, color: colors.background },
   diaryLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   diaryLocationText: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: colors.ink55 },
-  nfcExplainer: { backgroundColor: colors.sageLight, borderRadius: radii.lg, padding: spacing.md, gap: 6 },
-  nfcExplainerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  nfcExplainerTitle: { fontFamily: fonts.sansBold, fontSize: 12.5, color: colors.sageDark },
-  nfcExplainerBody: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.ink70, lineHeight: 16 },
+  nfcExplainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.sageLight,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  nfcExplainerIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nfcExplainerIcon: { transform: [{ rotate: '90deg' }] },
+  nfcExplainerTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.sageDark },
+  nfcExplainerBody: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink70, lineHeight: 17, marginTop: 4 },
+  nfcHowRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 8 },
+  nfcHowText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: colors.sageDark },
+  nfcSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.xs },
+  nfcSectionTitle: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
+  nfcCountPill: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: colors.sand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nfcCountText: { fontFamily: fonts.sansBold, fontSize: 11, color: colors.ink55 },
   nfcCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -500,6 +612,56 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     padding: spacing.md,
   },
+  nfcCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.sageLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nfcCardIconEmoji: { fontSize: 20 },
+  nfcCardStatusPill: { alignSelf: 'flex-start', marginTop: 6 },
+  nfcCardMeta: { fontFamily: fonts.sans, fontSize: 10.5, color: colors.ink38, marginTop: 6 },
+  nfcCardRightCol: { alignItems: 'flex-end', justifyContent: 'space-between', alignSelf: 'stretch', paddingVertical: 2 },
+  nfcOutroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.sageLight,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginTop: spacing.xs,
+  },
+  nfcOutroMascot: { width: 80, height: 80 },
+  nfcOutroTitle: { fontFamily: fonts.serif, fontSize: 17, color: colors.ink, lineHeight: 21 },
+  nfcOutroBody: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink70, lineHeight: 17, marginTop: 6 },
+  nfcOutroButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.background,
+    borderRadius: radii.pill,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    marginTop: 10,
+  },
+  nfcOutroButtonText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: colors.sageDark },
+  nfcHowOverlay: { flex: 1, backgroundColor: 'rgba(20,12,14,0.5)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  nfcHowCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.background,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  nfcHowTitle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+  nfcHowBody: { fontFamily: fonts.sans, fontSize: 13.5, color: colors.ink70, lineHeight: 20 },
+  nfcHowClose: { alignItems: 'center', paddingVertical: 12, marginTop: spacing.xs },
+  nfcHowCloseText: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.sageDark },
   statusPill: { borderRadius: radii.pill, paddingVertical: 4, paddingHorizontal: 10 },
   statusPillActive: { backgroundColor: '#DCF3E3' },
   statusPillInactive: { backgroundColor: colors.sand },
