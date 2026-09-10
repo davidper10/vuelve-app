@@ -10,7 +10,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.vuelveapp.mobile",
-      "associatedDomains": ["applinks:savetrip.vercel.app?mode=developer"]
+      "associatedDomains": [
+        "applinks:savetrip.vercel.app?mode=developer"
+      ]
     },
     "android": {
       "package": "com.vuelveapp.mobile",
@@ -87,7 +89,8 @@
           "organization": "david-perez-ys",
           "project": "react-native"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

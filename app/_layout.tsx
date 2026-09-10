@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as Sentry from '@sentry/react-native';
+import { PostHogProvider } from 'posthog-react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -53,29 +54,35 @@ function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <ConfirmProvider>
-            {stage === 'app' && (
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: colors.background },
-                }}
-              >
-                <Stack.Screen name="(auth)" />
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="viaje/[id]" />
-                <Stack.Screen name="momento/[id]" />
-                <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
-                <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
-                <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
-              </Stack>
-            )}
-            {stage === 'welcome' && <WelcomeOverview onContinue={() => setStage('app')} />}
-          </ConfirmProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
+      <PostHogProvider
+        apiKey={process.env.EXPO_PUBLIC_POSTHOG_KEY}
+        options={{ host: process.env.EXPO_PUBLIC_POSTHOG_HOST }}
+        autocapture
+      >
+        <SafeAreaProvider>
+          <AuthProvider>
+            <ConfirmProvider>
+              {stage === 'app' && (
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: colors.background },
+                  }}
+                >
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="viaje/[id]" />
+                  <Stack.Screen name="momento/[id]" />
+                  <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
+                  <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
+                  <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
+                </Stack>
+              )}
+              {stage === 'welcome' && <WelcomeOverview onContinue={() => setStage('app')} />}
+            </ConfirmProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </PostHogProvider>
     </GestureHandlerRootView>
   );
 }
