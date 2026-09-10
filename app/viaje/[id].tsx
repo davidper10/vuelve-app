@@ -28,6 +28,41 @@ function formatDateRange(start: string | null, end: string | null) {
   return `${s.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} – ${e.toLocaleDateString('es-ES', opts)}`;
 }
 
+function tripDaysCount(start: string | null, end: string | null) {
+  if (!start || !end) return null;
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  return Math.max(1, Math.round(ms / 86400000) + 1);
+}
+
+function TripOutro({
+  trip,
+  moments,
+  memoriesCount,
+  placesCount,
+}: {
+  trip: Trip;
+  moments: Moment[];
+  memoriesCount: number;
+  placesCount: number;
+}) {
+  const days = tripDaysCount(trip.start_date, trip.end_date);
+  return (
+    <View style={styles.outroCard}>
+      <Image
+        source={require('../../assets/mascota/recuerdo.png')}
+        style={styles.outroMascot}
+        resizeMode="contain"
+      />
+      <Text style={styles.outroTitle}>Eso es todo por {trip.title}</Text>
+      <Text style={styles.outroStats}>
+        {days ? `${days} días · ` : ''}
+        {moments.length} recuerdos · {placesCount} lugares
+      </Text>
+      <Text style={styles.outroTagline}>¡Qué gran aventura!</Text>
+    </View>
+  );
+}
+
 export default function ViajeDetail() {
   const { id, tab: initialTab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -136,7 +171,7 @@ export default function ViajeDetail() {
               style={styles.roundBtn}
               onPress={() => router.push(`/editar-viaje?tripId=${trip.id}`)}
             >
-              <Ionicons name="pencil" size={16} color="#FBF3EE" />
+              <Ionicons name="ellipsis-vertical" size={16} color="#FBF3EE" />
             </Pressable>
           </View>
           <LinearGradient
@@ -192,11 +227,15 @@ export default function ViajeDetail() {
             (moments.length === 0 ? (
               <Text style={styles.emptyText}>Todavía no hay momentos guardados en este viaje.</Text>
             ) : (
-              <MomentsTimeline
-                moments={moments}
-                photos={momentPhotos}
-                onPressMoment={(momentId) => router.push(`/momento/${momentId}`)}
-              />
+              <>
+                <MomentsTimeline
+                  moments={moments}
+                  photos={momentPhotos}
+                  onPressMoment={(momentId) => router.push(`/momento/${momentId}`)}
+                  onChanged={load}
+                />
+                <TripOutro trip={trip} moments={moments} memoriesCount={memoriesCount} placesCount={placesCount} />
+              </>
             ))}
 
           {tab === 'mapa' &&
@@ -327,9 +366,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.2)',
   },
   heroStatText: { fontFamily: fonts.sans, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
   heroStatNumber: { fontFamily: fonts.sansBold, color: '#FBF3EE' },
@@ -348,7 +384,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.sage,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -357,6 +393,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
+  outroCard: {
+    alignItems: 'center',
+    backgroundColor: colors.sageLight,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  outroMascot: { width: 120, height: 120, marginBottom: spacing.sm },
+  outroTitle: { fontFamily: fonts.serif, fontSize: 19, color: colors.ink, textAlign: 'center' },
+  outroStats: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.sageDark, marginTop: 6 },
+  outroTagline: { fontFamily: fonts.sans, fontSize: 13, color: colors.ink55, marginTop: 4, fontStyle: 'italic' },
   momentTitle: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
   momentSub: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.ink55, marginTop: 2 },
   mapInfoCard: {
