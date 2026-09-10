@@ -30,13 +30,6 @@ function formatDateRange(start: string | null, end: string | null) {
   return `${s.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} – ${e.toLocaleDateString('es-ES', opts)}`;
 }
 
-function formatDateTime(iso: string) {
-  const d = new Date(iso);
-  const date = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-  const time = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  return `${date} · ${time}`;
-}
-
 function tripDaysCount(start: string | null, end: string | null) {
   if (!start || !end) return null;
   const ms = new Date(end).getTime() - new Date(start).getTime();
@@ -366,7 +359,6 @@ export default function ViajeDetail() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.momentTitle}>{n.label}</Text>
-                      <Text style={styles.momentSub}>ID: {n.tag_uid ?? n.public_slug}</Text>
                       <View
                         style={[
                           styles.statusPill,
@@ -380,7 +372,6 @@ export default function ViajeDetail() {
                           {n.status === 'active' ? 'Activo' : 'Inactivo'}
                         </Text>
                       </View>
-                      <Text style={styles.nfcCardMeta}>Vinculado el {formatDateTime(n.created_at)}</Text>
                     </View>
                     <View style={styles.nfcCardRightCol}>
                       <Pressable
@@ -522,7 +513,6 @@ const styles = StyleSheet.create({
   outroStats: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.sageDark, marginTop: 6 },
   outroTagline: { fontFamily: fonts.sans, fontSize: 13, color: colors.ink55, marginTop: 4, fontStyle: 'italic' },
   momentTitle: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
-  momentSub: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.ink55, marginTop: 2 },
   mapInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -572,6 +562,7 @@ const styles = StyleSheet.create({
   diaryLocationText: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: colors.ink55 },
   nfcExplainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.sageLight,
     borderRadius: radii.lg,
     padding: spacing.md,
@@ -604,8 +595,8 @@ const styles = StyleSheet.create({
   nfcCountText: { fontFamily: fonts.sansBold, fontSize: 11, color: colors.ink55 },
   nfcCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.line,
@@ -621,8 +612,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nfcCardIconEmoji: { fontSize: 20 },
-  nfcCardStatusPill: { alignSelf: 'flex-start', marginTop: 6 },
-  nfcCardMeta: { fontFamily: fonts.sans, fontSize: 10.5, color: colors.ink38, marginTop: 6 },
+  nfcCardStatusPill: { alignSelf: 'flex-start', marginTop: 10 },
   nfcCardRightCol: { alignItems: 'flex-end', justifyContent: 'space-between', alignSelf: 'stretch', paddingVertical: 2 },
   nfcOutroCard: {
     flexDirection: 'row',
