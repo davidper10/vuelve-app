@@ -14,7 +14,9 @@ import type { Tables } from '@/lib/database.types';
 
 type Trip = Tables<'trips'>;
 type Moment = Tables<'moments'>;
-type DiaryEntry = Tables<'diary_entries'> & { profiles: { full_name: string | null } | null };
+type DiaryEntry = Tables<'diary_entries'> & {
+  profiles: { full_name: string | null; avatar_url: string | null } | null;
+};
 type NfcTag = Tables<'nfc_tags'>;
 
 type Tab = 'recuerdos' | 'mapa' | 'diario' | 'nfc';
@@ -83,7 +85,7 @@ export default function ViajeDetail() {
       supabase.from('moments').select('*').eq('trip_id', id).order('occurred_at', { ascending: true }),
       supabase
         .from('diary_entries')
-        .select('*, profiles(full_name)')
+        .select('*, profiles(full_name, avatar_url)')
         .eq('trip_id', id)
         .order('entry_date', { ascending: true }),
       supabase.from('nfc_tags').select('*').eq('trip_id', id),
@@ -282,9 +284,22 @@ export default function ViajeDetail() {
                   <Text style={styles.diaryText}>{d.body}</Text>
 
                   <View style={styles.diaryFooter}>
-                    <Text style={styles.diaryFooterText}>
-                      {d.profiles?.full_name ? `Escrito por ${d.profiles.full_name}` : ' '}
-                    </Text>
+                    {d.profiles?.full_name ? (
+                      <View style={styles.diaryAuthorRow}>
+                        {d.profiles.avatar_url ? (
+                          <Image source={{ uri: d.profiles.avatar_url }} style={styles.diaryAuthorAvatar} />
+                        ) : (
+                          <View style={[styles.diaryAuthorAvatar, styles.diaryAuthorAvatarFallback]}>
+                            <Text style={styles.diaryAuthorInitial}>
+                              {d.profiles.full_name.trim().charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={styles.diaryFooterText}>{d.profiles.full_name}</Text>
+                      </View>
+                    ) : (
+                      <View />
+                    )}
                     {!!d.place_name && (
                       <View style={styles.diaryLocationRow}>
                         <Ionicons name="location-outline" size={12} color={colors.sage} />
@@ -465,6 +480,10 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
   },
   diaryFooterText: { fontFamily: fonts.sans, fontSize: 11, color: colors.ink38 },
+  diaryAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  diaryAuthorAvatar: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.sandDark },
+  diaryAuthorAvatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.sage },
+  diaryAuthorInitial: { fontFamily: fonts.sansBold, fontSize: 9, color: colors.background },
   diaryLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   diaryLocationText: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: colors.ink55 },
   nfcExplainer: { backgroundColor: colors.sageLight, borderRadius: radii.lg, padding: spacing.md, gap: 6 },
