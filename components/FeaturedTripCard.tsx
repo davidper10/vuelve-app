@@ -39,8 +39,8 @@ export function FeaturedTripCard({ trip, momentsCount }: { trip: Trip; momentsCo
       />
 
       <View style={styles.topLeftBadge}>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Destacado</Text>
+        <View style={[styles.badge, styles.badgeFeatured]}>
+          <Text style={[styles.badgeText, styles.badgeFeaturedText]}>Destacado</Text>
         </View>
       </View>
 
@@ -113,6 +113,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   badgeSage: { backgroundColor: 'rgba(104,119,92,0.85)' },
+  badgeFeatured: { backgroundColor: colors.sageLight },
+  badgeFeaturedText: { color: colors.sageDark },
   badgeText: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: '#fff' },
   title: { fontFamily: fonts.serif, fontSize: 34, color: '#fff' },
   subtitle: { fontFamily: fonts.sans, fontSize: 13.5, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
