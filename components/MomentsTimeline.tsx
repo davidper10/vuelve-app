@@ -112,7 +112,7 @@ export function MomentsTimeline({
               <Text style={styles.weekday}>{weekday}</Text>
             </View>
 
-            <View style={styles.content}>
+            <View style={[styles.content, !isLast && styles.contentDivider]}>
               <Pressable onPress={() => onPressMoment(m.id)}>
               {isFav ? (
                 <View style={styles.featuredCard}>
@@ -238,12 +238,12 @@ const styles = StyleSheet.create({
   },
   weekday: { fontFamily: fonts.sans, fontSize: 10, color: colors.ink38, marginTop: 1 },
   content: { flex: 1, marginLeft: spacing.xs, marginBottom: spacing.lg },
+  contentDivider: {
+    paddingBottom: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(20,12,14,0.08)',
+  },
   card: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radii.lg,
-    padding: spacing.md,
     gap: spacing.sm,
   },
   cardTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
@@ -267,11 +267,6 @@ const styles = StyleSheet.create({
   },
   photoGridOverlayText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 16 },
   featuredCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radii.lg,
-    padding: spacing.md,
     gap: 8,
   },
   featuredTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
