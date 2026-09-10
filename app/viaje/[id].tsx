@@ -53,12 +53,14 @@ function TripOutro({
         style={styles.outroMascot}
         resizeMode="contain"
       />
-      <Text style={styles.outroTitle}>Eso es todo por {trip.title}</Text>
-      <Text style={styles.outroStats}>
-        {days ? `${days} días · ` : ''}
-        {moments.length} recuerdos · {placesCount} lugares
-      </Text>
-      <Text style={styles.outroTagline}>¡Qué gran aventura!</Text>
+      <View style={styles.outroTextCol}>
+        <Text style={styles.outroTitle}>Eso es todo por {trip.title}</Text>
+        <Text style={styles.outroStats}>
+          {days ? `${days} días · ` : ''}
+          {moments.length} recuerdos · {placesCount} lugares
+        </Text>
+        <Text style={styles.outroTagline}>¡Qué gran aventura!</Text>
+      </View>
     </View>
   );
 }
@@ -394,15 +396,18 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   outroCard: {
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.sageLight,
     borderRadius: radii.lg,
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     marginTop: spacing.sm,
+    gap: spacing.md,
   },
-  outroMascot: { width: 120, height: 120, marginBottom: spacing.sm },
-  outroTitle: { fontFamily: fonts.serif, fontSize: 19, color: colors.ink, textAlign: 'center' },
+  outroMascot: { width: 90, height: 90 },
+  outroTextCol: { flex: 1 },
+  outroTitle: { fontFamily: fonts.serif, fontSize: 18, color: colors.ink },
   outroStats: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.sageDark, marginTop: 6 },
   outroTagline: { fontFamily: fonts.sans, fontSize: 13, color: colors.ink55, marginTop: 4, fontStyle: 'italic' },
   momentTitle: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
