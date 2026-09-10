@@ -270,15 +270,27 @@ export default function ViajeDetail() {
                   style={styles.diaryEntry}
                   onPress={() => router.push(`/editar-diario?entryId=${d.id}`)}
                 >
-                  <Text style={styles.diaryEyebrow}>Nota de viaje #{i + 1}</Text>
+                  <View style={styles.diaryTopRow}>
+                    <Text style={styles.diaryEyebrow}>Nota de viaje #{i + 1}</Text>
+                    <Text style={styles.diaryDate}>
+                      {new Date(d.entry_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </Text>
+                  </View>
+
+                  {!!d.title && <Text style={styles.diaryTitle}>{d.title}</Text>}
+
                   <Text style={styles.diaryText}>{d.body}</Text>
+
                   <View style={styles.diaryFooter}>
                     <Text style={styles.diaryFooterText}>
                       {d.profiles?.full_name ? `Escrito por ${d.profiles.full_name}` : ' '}
                     </Text>
-                    <Text style={styles.diaryFooterText}>
-                      {new Date(d.entry_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </Text>
+                    {!!d.place_name && (
+                      <View style={styles.diaryLocationRow}>
+                        <Ionicons name="location-outline" size={12} color={colors.sage} />
+                        <Text style={styles.diaryLocationText}>{d.place_name}</Text>
+                      </View>
+                    )}
                   </View>
                 </Pressable>
               ))
@@ -433,6 +445,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 8,
   },
+  diaryTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
   diaryEyebrow: {
     fontFamily: fonts.sansBold,
     fontSize: 10.5,
@@ -440,15 +453,20 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  diaryDate: { fontFamily: fonts.sans, fontSize: 11, color: colors.ink38 },
+  diaryTitle: { fontFamily: fonts.serif, fontSize: 19, color: colors.ink },
   diaryText: { fontFamily: fonts.sans, fontSize: 13.5, color: colors.ink70, lineHeight: 20 },
   diaryFooter: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: colors.line,
   },
   diaryFooterText: { fontFamily: fonts.sans, fontSize: 11, color: colors.ink38 },
+  diaryLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  diaryLocationText: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: colors.ink55 },
   nfcExplainer: { backgroundColor: colors.sageLight, borderRadius: radii.lg, padding: spacing.md, gap: 6 },
   nfcExplainerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   nfcExplainerTitle: { fontFamily: fonts.sansBold, fontSize: 12.5, color: colors.sageDark },

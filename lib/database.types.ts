@@ -23,6 +23,8 @@ export type Database = {
           created_by: string | null
           entry_date: string
           id: string
+          place_name: string | null
+          title: string | null
           trip_id: string
         }
         Insert: {
@@ -31,6 +33,8 @@ export type Database = {
           created_by?: string | null
           entry_date: string
           id?: string
+          place_name?: string | null
+          title?: string | null
           trip_id: string
         }
         Update: {
@@ -39,6 +43,8 @@ export type Database = {
           created_by?: string | null
           entry_date?: string
           id?: string
+          place_name?: string | null
+          title?: string | null
           trip_id?: string
         }
         Relationships: [

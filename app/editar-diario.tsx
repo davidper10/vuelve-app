@@ -13,6 +13,8 @@ export default function EditarDiario() {
   const { entryId } = useLocalSearchParams<{ entryId: string }>();
   const [entry, setEntry] = useState<DiaryEntry | null>(null);
   const [entryDate, setEntryDate] = useState('');
+  const [title, setTitle] = useState('');
+  const [placeName, setPlaceName] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -23,6 +25,8 @@ export default function EditarDiario() {
     if (data) {
       setEntry(data);
       setEntryDate(data.entry_date);
+      setTitle(data.title ?? '');
+      setPlaceName(data.place_name ?? '');
       setBody(data.body);
     }
   }, [entryId]);
@@ -40,7 +44,12 @@ export default function EditarDiario() {
 
     const { error: err } = await supabase
       .from('diary_entries')
-      .update({ entry_date: entryDate.trim() || entry.entry_date, body: body.trim() })
+      .update({
+        entry_date: entryDate.trim() || entry.entry_date,
+        title: title.trim() || null,
+        place_name: placeName.trim() || null,
+        body: body.trim(),
+      })
       .eq('id', entry.id);
 
     setSubmitting(false);
@@ -64,6 +73,28 @@ export default function EditarDiario() {
       <Text style={styles.title}>Editar nota</Text>
 
       <DateField label="Fecha" value={entryDate} onChange={setEntryDate} />
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Título</Text>
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Un título para esta nota"
+          placeholderTextColor={colors.ink38}
+        />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Ubicación</Text>
+        <TextInput
+          style={styles.input}
+          value={placeName}
+          onChangeText={setPlaceName}
+          placeholder="¿Dónde ocurrió?"
+          placeholderTextColor={colors.ink38}
+        />
+      </View>
 
       <View style={styles.field}>
         <Text style={styles.label}>Nota</Text>

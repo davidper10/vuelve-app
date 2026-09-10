@@ -15,6 +15,8 @@ export default function CrearDiario() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const { session } = useAuth();
   const [entryDate, setEntryDate] = useState(today());
+  const [title, setTitle] = useState('');
+  const [placeName, setPlaceName] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -28,6 +30,8 @@ export default function CrearDiario() {
       trip_id: tripId,
       created_by: session.user.id,
       entry_date: entryDate.trim() || today(),
+      title: title.trim() || null,
+      place_name: placeName.trim() || null,
       body: body.trim(),
     });
 
@@ -44,6 +48,28 @@ export default function CrearDiario() {
       <Text style={styles.title}>Nueva nota de diario</Text>
 
       <DateField label="Fecha" value={entryDate} onChange={setEntryDate} />
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Título</Text>
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Un título para esta nota"
+          placeholderTextColor={colors.ink38}
+        />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Ubicación</Text>
+        <TextInput
+          style={styles.input}
+          value={placeName}
+          onChangeText={setPlaceName}
+          placeholder="¿Dónde ocurrió?"
+          placeholderTextColor={colors.ink38}
+        />
+      </View>
 
       <View style={styles.field}>
         <Text style={styles.label}>Nota</Text>
