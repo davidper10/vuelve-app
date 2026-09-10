@@ -101,15 +101,19 @@ export function MomentsTimeline({
 
         return (
           <View key={m.id} style={styles.row}>
-            <View style={styles.dateCol}>
+            <View style={styles.rail}>
               <View style={[styles.dot, isFav && styles.dotFav]} />
-              <Text style={styles.dayNum}>{day}</Text>
-              {!!month && <Text style={styles.monthAbbr}>{month}</Text>}
-              <Text style={styles.weekday}>{weekday}</Text>
               {!isLast && <View style={styles.railLine} />}
             </View>
 
-            <Pressable style={styles.content} onPress={() => onPressMoment(m.id)}>
+            <View style={styles.dateCol}>
+              <Text style={styles.dayNum}>{day}</Text>
+              {!!month && <Text style={styles.monthAbbr}>{month}</Text>}
+              <Text style={styles.weekday}>{weekday}</Text>
+            </View>
+
+            <View style={styles.content}>
+              <Pressable onPress={() => onPressMoment(m.id)}>
               {isFav ? (
                 <View style={styles.featuredCard}>
                   <View style={styles.featuredTopRow}>
@@ -176,7 +180,8 @@ export function MomentsTimeline({
                   )}
                 </View>
               )}
-            </Pressable>
+              </Pressable>
+            </View>
           </View>
         );
       })}
@@ -212,18 +217,18 @@ export function MomentsTimeline({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row' },
-  dateCol: { width: 54, alignItems: 'center' },
+  rail: { width: 14, alignItems: 'center' },
   dot: {
     width: 11,
     height: 11,
     borderRadius: 6,
-    backgroundColor: colors.card,
-    borderWidth: 2,
-    borderColor: colors.sage,
-    marginBottom: 4,
+    backgroundColor: colors.sage,
+    marginTop: 3,
   },
-  dotFav: { backgroundColor: colors.terracotta, borderColor: colors.terracotta },
-  dayNum: { fontFamily: fonts.sansBold, fontSize: 20, color: colors.ink, lineHeight: 22 },
+  dotFav: { backgroundColor: colors.terracotta },
+  railLine: { flex: 1, width: 2, backgroundColor: colors.line, marginTop: 4, marginBottom: -spacing.lg },
+  dateCol: { width: 44, marginLeft: 6 },
+  dayNum: { fontFamily: fonts.sansBold, fontSize: 17, color: colors.ink, lineHeight: 19 },
   monthAbbr: {
     fontFamily: fonts.sansBold,
     fontSize: 10.5,
@@ -231,9 +236,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  weekday: { fontFamily: fonts.sans, fontSize: 10, color: colors.ink38, marginTop: 1, textAlign: 'center' },
-  railLine: { flex: 1, width: 2, backgroundColor: colors.line, marginTop: 8, marginBottom: -spacing.lg },
-  content: { flex: 1, marginLeft: spacing.sm, marginBottom: spacing.lg },
+  weekday: { fontFamily: fonts.sans, fontSize: 10, color: colors.ink38, marginTop: 1 },
+  content: { flex: 1, marginLeft: spacing.xs, marginBottom: spacing.lg },
   card: {
     backgroundColor: colors.card,
     borderWidth: 1,
