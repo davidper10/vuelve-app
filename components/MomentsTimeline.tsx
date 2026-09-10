@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
   locationText: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.ink55 },
   photoGrid: { flexDirection: 'row', gap: 6 },
-  photoGridItem: { flex: 1, aspectRatio: 1, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.sandDark },
+  photoGridItem: { flex: 1, aspectRatio: 1.4, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.sandDark },
   photoGridImage: { width: '100%', height: '100%' },
   photoGridOverlay: {
     position: 'absolute',
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   favBadgeText: { fontFamily: fonts.sansBold, fontSize: 9.5, color: colors.terracotta },
-  featuredPhoto: { width: '100%', height: 170, borderRadius: radii.md, backgroundColor: colors.sandDark },
+  featuredPhoto: { width: '100%', height: 130, borderRadius: radii.md, backgroundColor: colors.sandDark },
   quote: {
     fontFamily: fonts.serifItalic,
     fontStyle: 'italic',
