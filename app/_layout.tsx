@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
+import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -24,7 +25,13 @@ type Stage = 'welcome' | 'app';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function RootLayout() {
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  tracesSampleRate: 1.0,
+  debug: __DEV__,
+});
+
+function RootLayout() {
   const [interLoaded] = useInterFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -72,3 +79,5 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);

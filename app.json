@@ -80,7 +80,14 @@
         }
       ],
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "david-perez-ys",
+          "project": "react-native"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
