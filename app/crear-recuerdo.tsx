@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { usePremium } from '@/lib/premium-context';
+import { presentPaywall } from '@/lib/paywall';
+import { countTripMemories, FREE_PHOTO_LIMIT } from '@/lib/limits';
 import { safeBack } from '@/lib/navigation';
 import { requestLocation } from '@/lib/location-picker-bridge';
 import { DateField } from '@/components/DateField';
@@ -13,6 +16,7 @@ import { DateField } from '@/components/DateField';
 export default function CrearRecuerdo() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const { session } = useAuth();
+  const { isPremium } = usePremium();
   const [title, setTitle] = useState('');
   const [story, setStory] = useState('');
   const [placeName, setPlaceName] = useState('');
@@ -52,6 +56,15 @@ export default function CrearRecuerdo() {
 
   const onCreate = async () => {
     if (!session || !tripId) return;
+
+    if (!isPremium && photos.length > 0) {
+      const existing = await countTripMemories(tripId);
+      if (existing + photos.length > FREE_PHOTO_LIMIT) {
+        const unlocked = await presentPaywall();
+        if (!unlocked) return;
+      }
+    }
+
     setError(null);
     setSubmitting(true);
 

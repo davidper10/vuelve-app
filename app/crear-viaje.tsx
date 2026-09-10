@@ -17,11 +17,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { usePremium } from '@/lib/premium-context';
+import { presentPaywall } from '@/lib/paywall';
+import { countOwnedTrips, FREE_TRIP_LIMIT } from '@/lib/limits';
 import { safeBack } from '@/lib/navigation';
 import { DateField } from '@/components/DateField';
 
 export default function CrearViaje() {
   const { session } = useAuth();
+  const { isPremium } = usePremium();
   const { width } = useWindowDimensions();
   const [title, setTitle] = useState('');
   const [country, setCountry] = useState('');
@@ -75,6 +79,15 @@ export default function CrearViaje() {
 
   const onCreate = async () => {
     if (!session) return;
+
+    if (!isPremium) {
+      const tripCount = await countOwnedTrips(session.user.id);
+      if (tripCount >= FREE_TRIP_LIMIT) {
+        const unlocked = await presentPaywall();
+        if (!unlocked) return;
+      }
+    }
+
     setError(null);
     setSubmitting(true);
 

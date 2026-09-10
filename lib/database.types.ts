@@ -284,6 +284,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_premium: boolean
           username: string | null
         }
         Insert: {
@@ -291,6 +292,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          is_premium?: boolean
           username?: string | null
         }
         Update: {
@@ -298,6 +300,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_premium?: boolean
           username?: string | null
         }
         Relationships: []

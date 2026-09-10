@@ -18,6 +18,7 @@ import {
   DMSerifDisplay_400Regular_Italic,
 } from '@expo-google-fonts/dm-serif-display';
 import { AuthProvider } from '@/lib/auth-context';
+import { PremiumProvider } from '@/lib/premium-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
 import { WelcomeOverview } from '@/components/WelcomeOverview';
 import { colors } from '@/constants/theme';
@@ -61,25 +62,27 @@ function RootLayout() {
       >
         <SafeAreaProvider>
           <AuthProvider>
-            <ConfirmProvider>
-              {stage === 'app' && (
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: colors.background },
-                  }}
-                >
-                  <Stack.Screen name="(auth)" />
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="viaje/[id]" />
-                  <Stack.Screen name="momento/[id]" />
-                  <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
-                  <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
-                  <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
-                </Stack>
-              )}
-              {stage === 'welcome' && <WelcomeOverview onContinue={() => setStage('app')} />}
-            </ConfirmProvider>
+            <PremiumProvider>
+              <ConfirmProvider>
+                {stage === 'app' && (
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      contentStyle: { backgroundColor: colors.background },
+                    }}
+                  >
+                    <Stack.Screen name="(auth)" />
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="viaje/[id]" />
+                    <Stack.Screen name="momento/[id]" />
+                    <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
+                  </Stack>
+                )}
+                {stage === 'welcome' && <WelcomeOverview onContinue={() => setStage('app')} />}
+              </ConfirmProvider>
+            </PremiumProvider>
           </AuthProvider>
         </SafeAreaProvider>
       </PostHogProvider>

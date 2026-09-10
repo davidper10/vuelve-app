@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { usePremium } from '@/lib/premium-context';
+import { presentPaywall } from '@/lib/paywall';
+import { countOwnedNfcTags, FREE_NFC_LIMIT } from '@/lib/limits';
 import { useTrips } from '@/lib/use-trips';
 import { safeBack } from '@/lib/navigation';
 import { EmojiPicker } from '@/components/EmojiPicker';
@@ -25,6 +28,7 @@ function randomSlug(length = 6) {
 
 export default function VincularNfc() {
   const { session } = useAuth();
+  const { isPremium } = usePremium();
   const { trips } = useTrips();
   const { tagId } = useLocalSearchParams<{ tagId?: string }>();
   const [step, setStep] = useState<Step>('checking');
@@ -97,6 +101,15 @@ export default function VincularNfc() {
   const writeAndSave = async () => {
     if (!session) return;
     if (!rewriteTag && !canContinue) return;
+
+    if (!rewriteTag && !isPremium) {
+      const nfcCount = await countOwnedNfcTags(session.user.id);
+      if (nfcCount >= FREE_NFC_LIMIT) {
+        const unlocked = await presentPaywall();
+        if (!unlocked) return;
+      }
+    }
+
     setError(null);
     setWriting(true);
 

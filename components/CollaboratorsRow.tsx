@@ -6,6 +6,9 @@ import * as Clipboard from 'expo-clipboard';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { usePremium } from '@/lib/premium-context';
+import { presentPaywall } from '@/lib/paywall';
+import { FREE_COLLABORATOR_LIMIT } from '@/lib/limits';
 
 const PUBLIC_BASE_URL = 'https://savetrip.vercel.app/unirse';
 
@@ -44,6 +47,7 @@ function Avatar({ name, avatarUrl, pending }: { name: string | null; avatarUrl?:
 
 export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId: string }) {
   const { session } = useAuth();
+  const { isPremium } = usePremium();
   const [owner, setOwner] = useState<OwnerProfile>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -132,6 +136,14 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
     }
   };
 
+  const onAddPress = async () => {
+    if (!isPremium && total >= FREE_COLLABORATOR_LIMIT) {
+      const unlocked = await presentPaywall();
+      if (!unlocked) return;
+    }
+    setAddModalOpen(true);
+  };
+
   return (
     <View style={styles.row}>
       <Pressable style={styles.left} onPress={() => setModalOpen(true)}>
@@ -148,7 +160,7 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
       </Pressable>
 
       {isOwner && (
-        <Pressable style={styles.addBtn} onPress={() => setAddModalOpen(true)}>
+        <Pressable style={styles.addBtn} onPress={onAddPress}>
           <Ionicons name="add" size={16} color={colors.background} />
         </Pressable>
       )}

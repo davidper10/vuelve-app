@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { usePremium } from '@/lib/premium-context';
+import { presentPaywall } from '@/lib/paywall';
+import { countTripMemories, FREE_PHOTO_LIMIT } from '@/lib/limits';
 import { safeBack } from '@/lib/navigation';
 import { requestLocation } from '@/lib/location-picker-bridge';
 import { DateField } from '@/components/DateField';
@@ -17,6 +20,7 @@ type ExistingPhoto = { memoryId: string; storagePath: string; url: string };
 export default function EditarRecuerdo() {
   const { momentId } = useLocalSearchParams<{ momentId: string }>();
   const { session } = useAuth();
+  const { isPremium } = usePremium();
   const [moment, setMoment] = useState<Moment | null>(null);
   const [title, setTitle] = useState('');
   const [story, setStory] = useState('');
@@ -97,6 +101,15 @@ export default function EditarRecuerdo() {
 
   const onSave = async () => {
     if (!moment || !session) return;
+
+    if (!isPremium && newPhotos.length > 0) {
+      const existing = await countTripMemories(moment.trip_id);
+      if (existing - removedIds.length + newPhotos.length > FREE_PHOTO_LIMIT) {
+        const unlocked = await presentPaywall();
+        if (!unlocked) return;
+      }
+    }
+
     setError(null);
     setSubmitting(true);
 

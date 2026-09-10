@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { countTripMembers, isUserPremium, FREE_COLLABORATOR_LIMIT } from '@/lib/limits';
 
 export default function UnirseATrip() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -37,6 +38,14 @@ export default function UnirseATrip() {
           .maybeSingle();
 
         if (!existing) {
+          const ownerPremium = trip?.owner_id ? await isUserPremium(trip.owner_id) : false;
+          if (!ownerPremium) {
+            const memberCount = await countTripMembers(share.trip_id);
+            if (1 + memberCount >= FREE_COLLABORATOR_LIMIT) {
+              setError('Este álbum colaborativo ya está completo. Pídele al dueño del viaje que pase a Premium para añadir más personas.');
+              return;
+            }
+          }
           // Cualquiera que se une por enlace puede añadir recuerdos.
           await supabase.from('trip_members').insert({
             trip_id: share.trip_id,
