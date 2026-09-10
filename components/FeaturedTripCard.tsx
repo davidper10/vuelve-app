@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
 import { flagForCountry } from '@/lib/flags';
-import { notify } from '@/lib/confirm';
 import type { Trip } from '@/lib/use-trips';
 
 function tripYear(trip: Trip) {
@@ -75,7 +74,7 @@ export function FeaturedTripCard({ trip, momentsCount }: { trip: Trip; momentsCo
             style={styles.reviveBtn}
             onPress={(e) => {
               e.stopPropagation();
-              notify('Revivir', 'El modo Revivir llegará pronto.');
+              router.push(`/revivir?tripId=${trip.id}`);
             }}
           >
             <Ionicons name="play" size={9} color={colors.terracotta} />
