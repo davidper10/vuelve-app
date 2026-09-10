@@ -38,21 +38,24 @@ export function FeaturedTripCard({ trip, momentsCount }: { trip: Trip; momentsCo
         style={styles.shade}
       />
 
-      <View style={styles.content}>
-        <View style={styles.badges}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Destacado</Text>
-          </View>
-          {!!year && (
-            <View style={[styles.badge, styles.badgeSage]}>
-              <Text style={styles.badgeText}>
-                {!!flag && `${flag} `}
-                {year}
-              </Text>
-            </View>
-          )}
+      <View style={styles.topLeftBadge}>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>Destacado</Text>
         </View>
+      </View>
 
+      {!!year && (
+        <View style={styles.topRightBadge}>
+          <View style={[styles.badge, styles.badgeSage]}>
+            <Text style={styles.badgeText}>
+              {!!flag && `${flag} `}
+              {year}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      <View style={styles.content}>
         <Text style={styles.title}>{trip.title}</Text>
         {!!trip.destination_summary && <Text style={styles.subtitle}>{trip.destination_summary}</Text>}
 
@@ -101,7 +104,8 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   content: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg },
-  badges: { flexDirection: 'row', gap: 8, marginBottom: spacing.sm },
+  topLeftBadge: { position: 'absolute', top: spacing.lg, left: spacing.lg },
+  topRightBadge: { position: 'absolute', top: spacing.lg, right: spacing.lg },
   badge: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: radii.pill,
