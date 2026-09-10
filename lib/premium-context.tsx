@@ -22,8 +22,12 @@ function configurePurchases() {
   if (configured) return;
   const apiKey = Platform.OS === 'ios' ? IOS_API_KEY : ANDROID_API_KEY;
   if (!apiKey) return;
-  Purchases.configure({ apiKey });
-  configured = true;
+  try {
+    Purchases.configure({ apiKey });
+    configured = true;
+  } catch {
+    // Módulo nativo no disponible todavía (p.ej. falta un rebuild nativo).
+  }
 }
 
 export function PremiumProvider({ children }: PropsWithChildren) {
