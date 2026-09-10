@@ -169,6 +169,9 @@ export default function ViajeDetail() {
             </Pressable>
           </View>
           <View style={styles.heroNavRight}>
+            <Pressable style={styles.roundBtn} onPress={() => router.push(`/revivir?tripId=${trip.id}`)}>
+              <Ionicons name="play" size={15} color="#FBF3EE" />
+            </Pressable>
             <Pressable style={styles.roundBtn} onPress={toggleFavorite}>
               <Ionicons name={trip.is_favorite ? 'heart' : 'heart-outline'} size={16} color="#FBF3EE" />
             </Pressable>
