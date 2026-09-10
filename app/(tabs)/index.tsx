@@ -192,6 +192,18 @@ export default function Home() {
             </View>
           </View>
         )}
+
+        <View style={styles.footerBanner}>
+          <View style={styles.footerIconWrap}>
+            <Ionicons name="map-outline" size={19} color={colors.ink} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.footerTitle}>Cada viaje cuenta una historia</Text>
+            <Text style={styles.footerBody}>
+              Sigue explorando, recordando y guardando lo que hace especiales tus viajes.
+            </Text>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -273,4 +285,22 @@ const styles = StyleSheet.create({
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   gridItem: { width: '48%' },
+  footerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.sageLight,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+  },
+  footerIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerTitle: { fontFamily: fonts.sansBold, fontSize: 14.5, color: colors.ink },
+  footerBody: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink55, marginTop: 3, lineHeight: 17 },
 });
