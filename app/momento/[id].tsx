@@ -374,6 +374,7 @@ const styles = StyleSheet.create({
   addPhotoText: { fontFamily: fonts.sansSemiBold, fontSize: 10.5, color: colors.ink55, textAlign: 'center' },
   locationCard: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
     backgroundColor: colors.card,
     borderWidth: 1,
