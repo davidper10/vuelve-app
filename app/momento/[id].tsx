@@ -159,8 +159,6 @@ export default function MomentoDetail() {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
                 })}
               </Text>
             </View>
@@ -169,23 +167,14 @@ export default function MomentoDetail() {
           <View style={styles.titleRow}>
             <Text style={styles.title}>{moment.title}</Text>
             <Pressable style={styles.editPill} onPress={() => router.push(`/editar-recuerdo?momentId=${moment.id}`)}>
-              <Ionicons name="pencil" size={12} color={colors.ink70} />
-              <Text style={styles.editPillText}>Editar</Text>
+              <Ionicons name="pencil" size={14} color={colors.ink70} />
             </Pressable>
           </View>
-
-          {!!moment.place_name && (
-            <View style={styles.locationRow}>
-              <Ionicons name="location" size={14} color={colors.sage} style={{ marginTop: 1 }} />
-              <Text style={styles.locationText}>{moment.place_name}</Text>
-            </View>
-          )}
 
           <View style={styles.divider} />
 
           {!!moment.story && (
             <View style={styles.quote}>
-              <Text style={styles.quoteMark}>"</Text>
               <Text style={styles.quoteText}>{moment.story}</Text>
             </View>
           )}
@@ -238,12 +227,6 @@ export default function MomentoDetail() {
           {!!place && (
             <View style={styles.locationCard}>
               <View style={{ flex: 1 }}>
-                <View style={styles.locationCardHeader}>
-                  <View style={styles.locationCardIcon}>
-                    <Ionicons name="location" size={13} color={colors.sage} />
-                  </View>
-                  <Text style={styles.locationCardTitle}>Ubicación</Text>
-                </View>
                 <Text style={styles.locationCardPrimary} numberOfLines={1}>
                   {place.primary}
                 </Text>
@@ -342,17 +325,13 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   title: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink, flex: 1 },
   editPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colors.sand,
-    borderRadius: radii.pill,
-    paddingVertical: 7,
-    paddingHorizontal: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  editPillText: { fontFamily: fonts.sansBold, fontSize: 12, color: colors.ink70 },
-  locationRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 8 },
-  locationText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.sage, flex: 1, lineHeight: 17 },
   divider: { height: 1, backgroundColor: colors.line, marginTop: spacing.md, marginBottom: spacing.md },
   quote: {
     backgroundColor: colors.sageLight,
@@ -361,17 +340,14 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.md,
     borderBottomRightRadius: radii.md,
     padding: spacing.md,
-    paddingLeft: spacing.md + 4,
     marginBottom: spacing.md,
   },
-  quoteMark: { fontFamily: fonts.serif, fontSize: 30, lineHeight: 30, color: colors.sage, opacity: 0.5 },
   quoteText: {
     fontFamily: fonts.serifItalic,
     fontStyle: 'italic',
     fontSize: 16,
     lineHeight: 23,
     color: colors.ink,
-    marginTop: -6,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -406,16 +382,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
-  locationCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  locationCardIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.sageLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  locationCardTitle: { fontFamily: fonts.sansBold, fontSize: 13, color: colors.ink },
   locationCardPrimary: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.ink },
   locationCardSecondary: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.ink55, marginTop: 2, lineHeight: 16 },
   locationCardMap: {
