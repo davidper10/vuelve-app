@@ -73,7 +73,7 @@ export default function ViajeDetail() {
   const [moments, setMoments] = useState<Moment[]>([]);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [nfcTags, setNfcTags] = useState<NfcTag[]>([]);
-  const [momentPhotos, setMomentPhotos] = useState<Record<string, string[]>>({});
+  const [momentPhotos, setMomentPhotos] = useState<Record<string, { url: string; type: string }[]>>({});
   const [memoriesCount, setMemoriesCount] = useState(0);
   const [videosCount, setVideosCount] = useState(0);
   const [tab, setTab] = useState<Tab>((initialTab as Tab) || 'recuerdos');
@@ -108,14 +108,14 @@ export default function ViajeDetail() {
     if (momentIds.length > 0) {
       const { data: links } = await supabase
         .from('moment_memories')
-        .select('moment_id, memories(storage_path)')
+        .select('moment_id, memories(storage_path, type)')
         .in('moment_id', momentIds);
-      const photos: Record<string, string[]> = {};
+      const photos: Record<string, { url: string; type: string }[]> = {};
       for (const link of links ?? []) {
-        const path = (link.memories as { storage_path: string } | null)?.storage_path;
-        if (path) {
-          const url = supabase.storage.from('memories').getPublicUrl(path).data.publicUrl;
-          (photos[link.moment_id] ??= []).push(url);
+        const memory = link.memories as { storage_path: string; type: string } | null;
+        if (memory?.storage_path) {
+          const url = supabase.storage.from('memories').getPublicUrl(memory.storage_path).data.publicUrl;
+          (photos[link.moment_id] ??= []).push({ url, type: memory.type });
         }
       }
       setMomentPhotos(photos);

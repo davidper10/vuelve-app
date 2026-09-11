@@ -81,14 +81,13 @@ export default function Home() {
 
       const [{ data: trip }, { data: links }] = await Promise.all([
         supabase.from('trips').select('title, country').eq('id', match.trip_id).single(),
-        supabase
-          .from('moment_memories')
-          .select('memories(storage_path)')
-          .eq('moment_id', match.id)
-          .limit(1),
+        supabase.from('moment_memories').select('memories(storage_path, type)').eq('moment_id', match.id),
       ]);
 
-      const path = (links?.[0]?.memories as { storage_path: string } | null)?.storage_path;
+      const photoMemory = (links ?? [])
+        .map((l) => l.memories as { storage_path: string; type: string } | null)
+        .find((m) => m?.type === 'photo');
+      const path = photoMemory?.storage_path;
 
       setNostalgia({
         id: match.id,

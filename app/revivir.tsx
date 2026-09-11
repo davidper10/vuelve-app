@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { colors, fonts, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { safeBack } from '@/lib/navigation';
@@ -10,9 +11,10 @@ import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
 type DiaryEntry = Tables<'diary_entries'>;
+type Media = { url: string; type: string } | null;
 
 type Slide =
-  | { kind: 'moment'; date: string; moment: Moment; photoUrl: string | null }
+  | { kind: 'moment'; date: string; moment: Moment; media: Media }
   | { kind: 'diary'; date: string; entry: DiaryEntry };
 
 function formatDate(iso: string) {
@@ -37,17 +39,20 @@ export default function Revivir() {
       setTripTitle(trip?.title ?? '');
 
       const momentIds = (moments ?? []).map((m) => m.id);
-      const photoByMoment: Record<string, string> = {};
+      const mediaByMoment: Record<string, { url: string; type: string }> = {};
       if (momentIds.length > 0) {
         const { data: links } = await supabase
           .from('moment_memories')
-          .select('moment_id, memories(storage_path, created_at)')
+          .select('moment_id, memories(storage_path, type, created_at)')
           .in('moment_id', momentIds)
           .order('created_at', { referencedTable: 'memories', ascending: true });
         for (const link of links ?? []) {
-          const path = (link.memories as { storage_path: string } | null)?.storage_path;
-          if (path && !photoByMoment[link.moment_id]) {
-            photoByMoment[link.moment_id] = supabase.storage.from('memories').getPublicUrl(path).data.publicUrl;
+          const memory = link.memories as { storage_path: string; type: string } | null;
+          if (memory?.storage_path && !mediaByMoment[link.moment_id]) {
+            mediaByMoment[link.moment_id] = {
+              url: supabase.storage.from('memories').getPublicUrl(memory.storage_path).data.publicUrl,
+              type: memory.type,
+            };
           }
         }
       }
@@ -56,7 +61,7 @@ export default function Revivir() {
         kind: 'moment',
         date: m.occurred_at ?? m.created_at,
         moment: m,
-        photoUrl: photoByMoment[m.id] ?? null,
+        media: mediaByMoment[m.id] ?? null,
       }));
       const diarySlides: Slide[] = (diary ?? []).map((d) => ({
         kind: 'diary',
@@ -131,11 +136,19 @@ export default function Revivir() {
 }
 
 function MomentSlide({ slide }: { slide: Slide & { kind: 'moment' } }) {
-  const { moment, photoUrl, date } = slide;
+  const { moment, media, date } = slide;
+  const isVideo = media?.type === 'video';
+  const player = useVideoPlayer(isVideo ? media!.url : null, (p) => {
+    p.loop = true;
+    p.play();
+  });
+
   return (
     <View style={StyleSheet.absoluteFill}>
-      {photoUrl ? (
-        <Image source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} />
+      {isVideo ? (
+        <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
+      ) : media ? (
+        <Image source={{ uri: media.url }} style={StyleSheet.absoluteFill} />
       ) : (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.sandDark }]} />
       )}

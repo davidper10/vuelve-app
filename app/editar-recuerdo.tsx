@@ -15,7 +15,7 @@ import { DateField } from '@/components/DateField';
 import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
-type ExistingPhoto = { memoryId: string; storagePath: string; url: string };
+type ExistingPhoto = { memoryId: string; storagePath: string; url: string; type: string };
 
 export default function EditarRecuerdo() {
   const { momentId } = useLocalSearchParams<{ momentId: string }>();
@@ -39,7 +39,7 @@ export default function EditarRecuerdo() {
       supabase.from('moments').select('*').eq('id', momentId).single(),
       supabase
         .from('moment_memories')
-        .select('memories(id, storage_path, created_at)')
+        .select('memories(id, storage_path, type, created_at)')
         .eq('moment_id', momentId)
         .order('created_at', { referencedTable: 'memories', ascending: true }),
     ]);
@@ -52,11 +52,12 @@ export default function EditarRecuerdo() {
       setCoords(data.lat != null && data.lng != null ? { lat: data.lat, lng: data.lng } : null);
     }
     const photos = (links ?? [])
-      .map((l) => l.memories as { id: string; storage_path: string } | null)
-      .filter((m): m is { id: string; storage_path: string } => !!m)
+      .map((l) => l.memories as { id: string; storage_path: string; type: string } | null)
+      .filter((m): m is { id: string; storage_path: string; type: string } => !!m)
       .map((m) => ({
         memoryId: m.id,
         storagePath: m.storage_path,
+        type: m.type,
         url: supabase.storage.from('memories').getPublicUrl(m.storage_path).data.publicUrl,
       }));
     setExistingPhotos(photos);
@@ -73,7 +74,7 @@ export default function EditarRecuerdo() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ['images', 'videos'],
       quality: 0.8,
       allowsMultipleSelection: true,
     });
@@ -143,8 +144,9 @@ export default function EditarRecuerdo() {
     let failedUploads = 0;
     for (let i = 0; i < newPhotos.length; i++) {
       const photo = newPhotos[i];
-      const ext = photo.uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const contentType = photo.mimeType || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+      const isVideo = photo.type === 'video';
+      const ext = photo.uri.split('.').pop()?.toLowerCase() || (isVideo ? 'mp4' : 'jpg');
+      const contentType = photo.mimeType || (isVideo ? `video/${ext}` : `image/${ext === 'jpg' ? 'jpeg' : ext}`);
       const path = `${moment.trip_id}/${moment.id}-edit-${i}-${Date.now()}.${ext}`;
       const arrayBuffer = await fetch(photo.uri).then((res) => res.arrayBuffer());
 
@@ -161,7 +163,7 @@ export default function EditarRecuerdo() {
         .insert({
           trip_id: moment.trip_id,
           created_by: session.user.id,
-          type: 'photo',
+          type: isVideo ? 'video' : 'photo',
           storage_path: path,
           place_name: placeName.trim() || null,
           taken_at: occurredAt.trim() ? `${occurredAt.trim()}T12:00:00` : null,
@@ -192,15 +194,25 @@ export default function EditarRecuerdo() {
     );
   }
 
-  const coverUri = existingPhotos[0]?.url ?? newPhotos[0]?.uri ?? null;
+  const cover = existingPhotos[0]
+    ? { uri: existingPhotos[0].url, isVideo: existingPhotos[0].type === 'video' }
+    : newPhotos[0]
+      ? { uri: newPhotos[0].uri, isVideo: newPhotos[0].type === 'video' }
+      : null;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
       <Text style={styles.title}>Editar recuerdo</Text>
 
       <Pressable style={styles.photoPicker} onPress={pickPhotos}>
-        {coverUri ? (
-          <Image source={{ uri: coverUri }} style={styles.photoPreview} />
+        {cover ? (
+          cover.isVideo ? (
+            <View style={[styles.photoPreview, styles.videoPreviewPlaceholder]}>
+              <Ionicons name="play-circle" size={36} color="#fff" />
+            </View>
+          ) : (
+            <Image source={{ uri: cover.uri }} style={styles.photoPreview} />
+          )
         ) : (
           <View style={styles.photoPlaceholder}>
             <Ionicons name="image-outline" size={26} color={colors.ink38} />
@@ -213,7 +225,13 @@ export default function EditarRecuerdo() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbStrip}>
           {existingPhotos.map((p) => (
             <View key={p.memoryId} style={styles.thumbWrap}>
-              <Image source={{ uri: p.url }} style={styles.thumb} />
+              {p.type === 'video' ? (
+                <View style={[styles.thumb, styles.videoThumbPlaceholder]}>
+                  <Ionicons name="play" size={18} color="#fff" />
+                </View>
+              ) : (
+                <Image source={{ uri: p.url }} style={styles.thumb} />
+              )}
               <Pressable style={styles.removeThumb} onPress={() => removeExisting(p.memoryId)}>
                 <Ionicons name="close" size={12} color="#fff" />
               </Pressable>
@@ -221,7 +239,13 @@ export default function EditarRecuerdo() {
           ))}
           {newPhotos.map((p) => (
             <View key={p.uri} style={styles.thumbWrap}>
-              <Image source={{ uri: p.uri }} style={styles.thumb} />
+              {p.type === 'video' ? (
+                <View style={[styles.thumb, styles.videoThumbPlaceholder]}>
+                  <Ionicons name="play" size={18} color="#fff" />
+                </View>
+              ) : (
+                <Image source={{ uri: p.uri }} style={styles.thumb} />
+              )}
               <View style={styles.newBadge}>
                 <Text style={styles.newBadgeText}>Nueva</Text>
               </View>
@@ -313,6 +337,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   photoPlaceholderText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink55 },
+  videoPreviewPlaceholder: { backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  videoThumbPlaceholder: { backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   thumbStrip: { marginBottom: spacing.lg },
   thumbWrap: { position: 'relative', marginRight: 10 },
   thumb: { width: 64, height: 64, borderRadius: radii.sm, backgroundColor: colors.sandDark },

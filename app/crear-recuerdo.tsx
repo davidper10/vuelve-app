@@ -41,7 +41,7 @@ export default function CrearRecuerdo() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ['images', 'videos'],
       quality: 0.8,
       allowsMultipleSelection: true,
     });
@@ -92,8 +92,9 @@ export default function CrearRecuerdo() {
     let failedUploads = 0;
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
-      const ext = photo.uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const contentType = photo.mimeType || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+      const isVideo = photo.type === 'video';
+      const ext = photo.uri.split('.').pop()?.toLowerCase() || (isVideo ? 'mp4' : 'jpg');
+      const contentType = photo.mimeType || (isVideo ? `video/${ext}` : `image/${ext === 'jpg' ? 'jpeg' : ext}`);
       const path = `${tripId}/${moment.id}-${i}-${Date.now()}.${ext}`;
       const arrayBuffer = await fetch(photo.uri).then((res) => res.arrayBuffer());
 
@@ -110,7 +111,7 @@ export default function CrearRecuerdo() {
         .insert({
           trip_id: tripId,
           created_by: session.user.id,
-          type: 'photo',
+          type: isVideo ? 'video' : 'photo',
           storage_path: path,
           place_name: placeName.trim() || null,
           taken_at: occurredAt.trim() ? `${occurredAt.trim()}T12:00:00` : null,
@@ -138,7 +139,13 @@ export default function CrearRecuerdo() {
 
       <Pressable style={styles.photoPicker} onPress={pickPhotos}>
         {photos.length > 0 ? (
-          <Image source={{ uri: photos[0].uri }} style={styles.photoPreview} />
+          photos[0].type === 'video' ? (
+            <View style={[styles.photoPreview, styles.videoPreviewPlaceholder]}>
+              <Ionicons name="play-circle" size={36} color="#fff" />
+            </View>
+          ) : (
+            <Image source={{ uri: photos[0].uri }} style={styles.photoPreview} />
+          )
         ) : (
           <View style={styles.photoPlaceholder}>
             <Ionicons name="image-outline" size={26} color={colors.ink38} />
@@ -151,7 +158,13 @@ export default function CrearRecuerdo() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbStrip}>
           {photos.map((p, i) => (
             <View key={p.uri} style={styles.thumbWrap}>
-              <Image source={{ uri: p.uri }} style={styles.thumb} />
+              {p.type === 'video' ? (
+                <View style={[styles.thumb, styles.videoThumbPlaceholder]}>
+                  <Ionicons name="play" size={18} color="#fff" />
+                </View>
+              ) : (
+                <Image source={{ uri: p.uri }} style={styles.thumb} />
+              )}
               {i === 0 && (
                 <View style={styles.coverBadge}>
                   <Text style={styles.coverBadgeText}>Portada</Text>
@@ -245,6 +258,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   photoPlaceholderText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: colors.ink55 },
+  videoPreviewPlaceholder: { backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  videoThumbPlaceholder: { backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   thumbStrip: { marginBottom: spacing.lg },
   thumbWrap: { position: 'relative', marginRight: 10 },
   thumb: { width: 64, height: 64, borderRadius: radii.sm, backgroundColor: colors.sandDark },

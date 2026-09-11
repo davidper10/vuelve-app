@@ -8,6 +8,7 @@ import { useConfirm } from '@/lib/confirm-context';
 import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
+type MediaItem = { url: string; type: string };
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -23,17 +24,23 @@ function dateParts(iso: string | null) {
   };
 }
 
-function PhotoGrid({ photos }: { photos: string[] }) {
+function PhotoGrid({ photos }: { photos: MediaItem[] }) {
   if (photos.length === 0) return null;
   const shown = photos.slice(0, 3);
   const extra = photos.length - shown.length;
   return (
     <View style={styles.photoGrid}>
-      {shown.map((uri, i) => {
+      {shown.map((item, i) => {
         const isLast = i === shown.length - 1;
         return (
-          <View key={uri} style={styles.photoGridItem}>
-            <Image source={{ uri }} style={styles.photoGridImage} />
+          <View key={item.url} style={styles.photoGridItem}>
+            {item.type === 'video' ? (
+              <View style={[styles.photoGridImage, styles.videoGridImage]}>
+                <Ionicons name="play" size={16} color="#fff" />
+              </View>
+            ) : (
+              <Image source={{ uri: item.url }} style={styles.photoGridImage} />
+            )}
             {isLast && extra > 0 && (
               <View style={styles.photoGridOverlay}>
                 <Text style={styles.photoGridOverlayText}>+{extra}</Text>
@@ -53,7 +60,7 @@ export function MomentsTimeline({
   onChanged,
 }: {
   moments: Moment[];
-  photos: Record<string, string[]>;
+  photos: Record<string, MediaItem[]>;
   onPressMoment: (id: string) => void;
   onChanged?: () => void;
 }) {
@@ -135,7 +142,14 @@ export function MomentsTimeline({
                     </View>
                   )}
 
-                  {!!momentPhotos[0] && <Image source={{ uri: momentPhotos[0] }} style={styles.featuredPhoto} />}
+                  {!!momentPhotos[0] &&
+                    (momentPhotos[0].type === 'video' ? (
+                      <View style={[styles.featuredPhoto, styles.videoGridImage]}>
+                        <Ionicons name="play" size={24} color="#fff" />
+                      </View>
+                    ) : (
+                      <Image source={{ uri: momentPhotos[0].url }} style={styles.featuredPhoto} />
+                    ))}
 
                   {!!m.story && (
                     <Text style={styles.quote} numberOfLines={3}>
@@ -255,6 +269,7 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', gap: 6 },
   photoGridItem: { flex: 1, aspectRatio: 1.4, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.sandDark },
   photoGridImage: { width: '100%', height: '100%' },
+  videoGridImage: { backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   photoGridOverlay: {
     position: 'absolute',
     top: 0,

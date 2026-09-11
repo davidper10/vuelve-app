@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Image, Linking, Modal, Pressable, Share, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { safeBack } from '@/lib/navigation';
@@ -9,17 +10,33 @@ import { useConfirm } from '@/lib/confirm-context';
 import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
+type MediaItem = { url: string; type: string };
 
 function splitPlace(placeName: string) {
   const parts = placeName.split(',').map((p) => p.trim());
   return { primary: parts[0], secondary: parts.slice(1).join(', ') };
 }
 
+function HeroMedia({ item }: { item: MediaItem | undefined }) {
+  const isVideo = item?.type === 'video';
+  const player = useVideoPlayer(isVideo ? item!.url : null, (p) => {
+    p.loop = true;
+  });
+
+  if (!item) {
+    return <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.sandDark }]} />;
+  }
+  if (isVideo) {
+    return <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls />;
+  }
+  return <Image source={{ uri: item.url }} style={StyleSheet.absoluteFill} />;
+}
+
 export default function MomentoDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const confirm = useConfirm();
   const [moment, setMoment] = useState<Moment | null>(null);
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [media, setMedia] = useState<MediaItem[]>([]);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -29,16 +46,19 @@ export default function MomentoDetail() {
       supabase.from('moments').select('*').eq('id', id).single(),
       supabase
         .from('moment_memories')
-        .select('memories(storage_path, created_at)')
+        .select('memories(storage_path, type, created_at)')
         .eq('moment_id', id)
         .order('created_at', { referencedTable: 'memories', ascending: true }),
     ]);
     setMoment(data);
-    const urls = (links ?? [])
-      .map((l) => (l.memories as { storage_path: string } | null)?.storage_path)
-      .filter((p): p is string => !!p)
-      .map((path) => supabase.storage.from('memories').getPublicUrl(path).data.publicUrl);
-    setPhotoUrls(urls);
+    const items = (links ?? [])
+      .map((l) => l.memories as { storage_path: string; type: string } | null)
+      .filter((m): m is { storage_path: string; type: string } => !!m?.storage_path)
+      .map((m) => ({
+        url: supabase.storage.from('memories').getPublicUrl(m.storage_path).data.publicUrl,
+        type: m.type,
+      }));
+    setMedia(items);
   }, [id]);
 
   useFocusEffect(
@@ -103,11 +123,7 @@ export default function MomentoDetail() {
     <View style={styles.screen}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          {photoUrls[photoIndex] ? (
-            <Image source={{ uri: photoUrls[photoIndex] }} style={StyleSheet.absoluteFill} />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.sandDark }]} />
-          )}
+          <HeroMedia item={media[photoIndex]} />
           <View style={styles.heroNav}>
             <Pressable style={styles.roundBtn} onPress={() => safeBack(backHref)}>
               <Ionicons name="chevron-back" size={18} color="#FBF3EE" />
@@ -124,25 +140,25 @@ export default function MomentoDetail() {
               <Ionicons name="ellipsis-vertical" size={16} color="#FBF3EE" />
             </Pressable>
           </View>
-          {photoUrls.length > 0 && (
+          {media.length > 0 && (
             <View style={styles.photoCountBadge}>
               <Ionicons name="images-outline" size={13} color="#fff" />
               <Text style={styles.photoCountText}>
-                {photoIndex + 1} / {photoUrls.length} fotos
+                {photoIndex + 1} / {media.length}
               </Text>
             </View>
           )}
-          {photoUrls.length > 1 && (
+          {media.length > 1 && (
             <View style={styles.heroPager}>
               <Pressable
                 style={styles.roundBtnSmall}
-                onPress={() => setPhotoIndex((i) => (i - 1 + photoUrls.length) % photoUrls.length)}
+                onPress={() => setPhotoIndex((i) => (i - 1 + media.length) % media.length)}
               >
                 <Ionicons name="chevron-back" size={16} color="#FBF3EE" />
               </Pressable>
               <Pressable
                 style={styles.roundBtnSmall}
-                onPress={() => setPhotoIndex((i) => (i + 1) % photoUrls.length)}
+                onPress={() => setPhotoIndex((i) => (i + 1) % media.length)}
               >
                 <Ionicons name="chevron-forward" size={16} color="#FBF3EE" />
               </Pressable>
@@ -198,21 +214,27 @@ export default function MomentoDetail() {
             </View>
           )}
 
-          {photoUrls.length > 0 && (
+          {media.length > 0 && (
             <>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Fotos de este momento</Text>
+                <Text style={styles.sectionTitle}>Fotos y vídeos de este momento</Text>
                 <View style={styles.sectionMoreRow}>
                   <Text style={styles.sectionMoreText}>
-                    {photoUrls.length} foto{photoUrls.length === 1 ? '' : 's'}
+                    {media.length} archivo{media.length === 1 ? '' : 's'}
                   </Text>
                   <Ionicons name="chevron-forward" size={13} color={colors.ink38} />
                 </View>
               </View>
               <View style={styles.photoGrid}>
-                {photoUrls.map((url) => (
-                  <Image key={url} source={{ uri: url }} style={styles.photoGridItem} />
-                ))}
+                {media.map((item) =>
+                  item.type === 'video' ? (
+                    <View key={item.url} style={[styles.photoGridItem, styles.videoGridItem]}>
+                      <Ionicons name="play" size={20} color="#fff" />
+                    </View>
+                  ) : (
+                    <Image key={item.url} source={{ uri: item.url }} style={styles.photoGridItem} />
+                  )
+                )}
                 <Pressable
                   style={styles.addPhotoTile}
                   onPress={() => router.push(`/editar-recuerdo?momentId=${moment.id}`)}
@@ -360,6 +382,7 @@ const styles = StyleSheet.create({
   sectionMoreText: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink38 },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.md },
   photoGridItem: { width: 96, height: 96, borderRadius: radii.md, backgroundColor: colors.sandDark },
+  videoGridItem: { backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   addPhotoTile: {
     width: 96,
     height: 96,
