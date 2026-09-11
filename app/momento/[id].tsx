@@ -49,6 +49,19 @@ function HeroMedia({ item }: { item: MediaItem | undefined }) {
   return <Image source={{ uri: item.url }} style={StyleSheet.absoluteFill} />;
 }
 
+function GalleryMedia({ item }: { item: MediaItem }) {
+  const isVideo = item.type === 'video';
+  const player = useVideoPlayer(isVideo ? item.url : null, (p) => {
+    p.loop = true;
+    p.play();
+  });
+
+  if (isVideo) {
+    return <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls />;
+  }
+  return <Image source={{ uri: item.url }} style={StyleSheet.absoluteFill} resizeMode="contain" />;
+}
+
 export default function MomentoDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const confirm = useConfirm();
@@ -59,6 +72,7 @@ export default function MomentoDetail() {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -311,15 +325,17 @@ export default function MomentoDetail() {
                 </View>
               </View>
               <View style={styles.photoGrid}>
-                {media.map((item) =>
-                  item.type === 'video' ? (
-                    <View key={item.url} style={[styles.photoGridItem, styles.videoGridItem]}>
-                      <Ionicons name="play" size={20} color="#fff" />
-                    </View>
-                  ) : (
-                    <Image key={item.url} source={{ uri: item.url }} style={styles.photoGridItem} />
-                  )
-                )}
+                {media.map((item, i) => (
+                  <Pressable key={item.url} onPress={() => setGalleryIndex(i)}>
+                    {item.type === 'video' ? (
+                      <View style={[styles.photoGridItem, styles.videoGridItem]}>
+                        <Ionicons name="play" size={20} color="#fff" />
+                      </View>
+                    ) : (
+                      <Image source={{ uri: item.url }} style={styles.photoGridItem} />
+                    )}
+                  </Pressable>
+                ))}
                 <Pressable style={styles.addPhotoTile} onPress={addPhotos} disabled={uploading}>
                   {uploading ? (
                     <ActivityIndicator color={colors.ink55} />
@@ -389,6 +405,39 @@ export default function MomentoDetail() {
             </Pressable>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      <Modal
+        visible={galleryIndex !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setGalleryIndex(null)}
+      >
+        <View style={styles.galleryOverlay}>
+          {galleryIndex !== null && media[galleryIndex] && <GalleryMedia item={media[galleryIndex]} />}
+
+          <View style={styles.galleryTopBar}>
+            <Text style={styles.galleryCounter}>
+              {galleryIndex !== null ? galleryIndex + 1 : 0} / {media.length}
+            </Text>
+            <Pressable style={styles.roundBtn} onPress={() => setGalleryIndex(null)}>
+              <Ionicons name="close" size={20} color="#FBF3EE" />
+            </Pressable>
+          </View>
+
+          {media.length > 1 && (
+            <View style={styles.galleryTapZones} pointerEvents="box-none">
+              <Pressable
+                style={styles.galleryTapLeft}
+                onPress={() => setGalleryIndex((i) => (i === null ? i : (i - 1 + media.length) % media.length))}
+              />
+              <Pressable
+                style={styles.galleryTapRight}
+                onPress={() => setGalleryIndex((i) => (i === null ? i : (i + 1) % media.length))}
+              />
+            </View>
+          )}
+        </View>
       </Modal>
     </View>
   );
@@ -530,6 +579,29 @@ const styles = StyleSheet.create({
   menuItemText: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: colors.ink },
   menuCancel: { alignItems: 'center', paddingVertical: 12, marginTop: spacing.xs },
   menuCancelText: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.ink55 },
+  galleryOverlay: { flex: 1, backgroundColor: colors.ink },
+  galleryTopBar: {
+    position: 'absolute',
+    top: 54,
+    left: 16,
+    right: 16,
+    zIndex: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  galleryCounter: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 12.5,
+    color: '#FBF3EE',
+    backgroundColor: 'rgba(20,12,14,0.4)',
+    borderRadius: radii.pill,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  galleryTapZones: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, flexDirection: 'row', zIndex: 2 },
+  galleryTapLeft: { flex: 1 },
+  galleryTapRight: { flex: 1 },
   songBar: {
     flexDirection: 'row',
     alignItems: 'center',
