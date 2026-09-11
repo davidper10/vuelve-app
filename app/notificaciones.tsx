@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { safeBack } from '@/lib/navigation';
 import { useNotifications } from '@/lib/notifications-context';
+import type { ReminderTime } from '@/lib/notification-prefs';
 
 type Category = 'recuerdos' | 'diario';
 
@@ -27,13 +28,23 @@ function formatTime(hour: number, minute: number) {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
+// Usa la fecha actual como base: construir con año 0 (1899) cae en una fecha
+// previa a la estandarización de husos horarios, donde el offset histórico
+// local no es un número redondo de minutos y puede no coincidir entre el
+// motor JS y el selector nativo, desplazando la hora mostrada.
+function timeToDate(time: ReminderTime): Date {
+  const d = new Date();
+  d.setHours(time.hour, time.minute, 0, 0);
+  return d;
+}
+
 export default function Notificaciones() {
   const { prefs, setRecuerdosEnabled, setDiarioEnabled, setReminderTime } = useNotifications();
   const [justifying, setJustifying] = useState<Category | null>(null);
   const [denied, setDenied] = useState<Category | null>(null);
   const [activating, setActivating] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [draftTime, setDraftTime] = useState(new Date(0, 0, 0, prefs.reminderTime.hour, prefs.reminderTime.minute));
+  const [draftTime, setDraftTime] = useState(() => timeToDate(prefs.reminderTime));
 
   const isEnabled = (category: Category) => (category === 'recuerdos' ? prefs.recuerdosEnabled : prefs.diarioEnabled);
   const setEnabled = (category: Category) => (category === 'recuerdos' ? setRecuerdosEnabled : setDiarioEnabled);
@@ -56,7 +67,7 @@ export default function Notificaciones() {
   };
 
   const openPicker = () => {
-    setDraftTime(new Date(0, 0, 0, prefs.reminderTime.hour, prefs.reminderTime.minute));
+    setDraftTime(timeToDate(prefs.reminderTime));
     setPickerOpen(true);
   };
 
