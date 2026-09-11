@@ -1,12 +1,29 @@
 import { useCallback, useState } from 'react';
-import { Image, Linking, Modal, Pressable, Share, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Linking,
+  Modal,
+  Pressable,
+  Share,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { safeBack } from '@/lib/navigation';
+import { notify } from '@/lib/confirm';
 import { useConfirm } from '@/lib/confirm-context';
+import { useAuth } from '@/lib/auth-context';
+import { usePremium } from '@/lib/premium-context';
+import { presentPaywall } from '@/lib/paywall';
+import { countTripMemories, FREE_PHOTO_LIMIT } from '@/lib/limits';
 import type { Tables } from '@/lib/database.types';
 
 type Moment = Tables<'moments'>;
@@ -35,10 +52,13 @@ function HeroMedia({ item }: { item: MediaItem | undefined }) {
 export default function MomentoDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const confirm = useConfirm();
+  const { session } = useAuth();
+  const { isPremium } = usePremium();
   const [moment, setMoment] = useState<Moment | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -105,6 +125,71 @@ export default function MomentoDetail() {
     await supabase.from('nfc_tags').delete().eq('moment_id', moment.id);
     await supabase.from('moments').delete().eq('id', moment.id);
     safeBack(moment.trip_id ? `/viaje/${moment.trip_id}` : '/viajes');
+  };
+
+  const addPhotos = async () => {
+    if (!moment || !session) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      notify('Permiso necesario', 'Necesitamos permiso para acceder a tus fotos.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      quality: 0.8,
+      allowsMultipleSelection: true,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+
+    if (!isPremium) {
+      const existing = await countTripMemories(moment.trip_id);
+      if (existing + result.assets.length > FREE_PHOTO_LIMIT) {
+        const unlocked = await presentPaywall();
+        if (!unlocked) return;
+      }
+    }
+
+    setUploading(true);
+    let failed = 0;
+    for (let i = 0; i < result.assets.length; i++) {
+      const asset = result.assets[i];
+      const isVideo = asset.type === 'video';
+      const ext = asset.uri.split('.').pop()?.toLowerCase() || (isVideo ? 'mp4' : 'jpg');
+      const contentType = asset.mimeType || (isVideo ? `video/${ext}` : `image/${ext === 'jpg' ? 'jpeg' : ext}`);
+      const path = `${moment.trip_id}/${moment.id}-add-${i}-${Date.now()}.${ext}`;
+      const arrayBuffer = await fetch(asset.uri).then((res) => res.arrayBuffer());
+
+      const { error: uploadErr } = await supabase.storage.from('memories').upload(path, arrayBuffer, {
+        contentType,
+      });
+      if (uploadErr) {
+        failed++;
+        continue;
+      }
+
+      const { data: memory, error: memoryErr } = await supabase
+        .from('memories')
+        .insert({
+          trip_id: moment.trip_id,
+          created_by: session.user.id,
+          type: isVideo ? 'video' : 'photo',
+          storage_path: path,
+          place_name: moment.place_name,
+          taken_at: moment.occurred_at,
+        })
+        .select()
+        .single();
+
+      if (!memoryErr && memory) {
+        await supabase.from('moment_memories').insert({ moment_id: moment.id, memory_id: memory.id });
+      } else {
+        failed++;
+      }
+    }
+
+    setUploading(false);
+    if (failed > 0) notify('Aviso', `${failed} archivo(s) no se pudieron subir.`);
+    load();
   };
 
   if (!moment) {
@@ -235,12 +320,15 @@ export default function MomentoDetail() {
                     <Image key={item.url} source={{ uri: item.url }} style={styles.photoGridItem} />
                   )
                 )}
-                <Pressable
-                  style={styles.addPhotoTile}
-                  onPress={() => router.push(`/editar-recuerdo?momentId=${moment.id}`)}
-                >
-                  <Ionicons name="add" size={20} color={colors.ink55} />
-                  <Text style={styles.addPhotoText}>Añadir{'\n'}más fotos</Text>
+                <Pressable style={styles.addPhotoTile} onPress={addPhotos} disabled={uploading}>
+                  {uploading ? (
+                    <ActivityIndicator color={colors.ink55} />
+                  ) : (
+                    <>
+                      <Ionicons name="add" size={20} color={colors.ink55} />
+                      <Text style={styles.addPhotoText}>Añadir{'\n'}más fotos</Text>
+                    </>
+                  )}
                 </Pressable>
               </View>
             </>
