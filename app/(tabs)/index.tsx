@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useTrips } from '@/lib/use-trips';
 import { supabase } from '@/lib/supabase';
 import { notify } from '@/lib/confirm';
+import { useNotifications } from '@/lib/notifications-context';
 import { TripCard } from '@/components/TripCard';
 import { FeaturedTripCard } from '@/components/FeaturedTripCard';
 import { flagForCountry } from '@/lib/flags';
@@ -27,10 +28,17 @@ type NostalgicMoment = {
 export default function Home() {
   const { session } = useAuth();
   const { trips, loading, error } = useTrips();
+  const { refresh: refreshNotifications } = useNotifications();
   const firstName = (session?.user.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? 'viajero';
 
   const [momentCounts, setMomentCounts] = useState<Record<string, number>>({});
   const [nostalgia, setNostalgia] = useState<NostalgicMoment | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshNotifications().catch(() => {});
+    }, [refreshNotifications])
+  );
 
   const [featured, ...rest] = trips;
   const gridTrips = rest.slice(0, 4);

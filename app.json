@@ -84,6 +84,14 @@
       "expo-web-browser",
       "@react-native-community/datetimepicker",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#C87554",
+          "defaultChannel": "default"
+        }
+      ],
+      [
         "@sentry/react-native/expo",
         {
           "organization": "david-perez-ys",

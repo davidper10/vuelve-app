@@ -135,9 +135,14 @@ export default function Perfil() {
           <Text style={styles.actionRowText}>Editar perfil</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.ink38} />
         </Pressable>
-        <Pressable style={[styles.actionRow, styles.actionRowLast]} onPress={() => router.push('/cambiar-contrasena')}>
+        <Pressable style={styles.actionRow} onPress={() => router.push('/cambiar-contrasena')}>
           <Ionicons name="lock-closed-outline" size={17} color={colors.ink70} />
           <Text style={styles.actionRowText}>Cambiar contraseña</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.ink38} />
+        </Pressable>
+        <Pressable style={[styles.actionRow, styles.actionRowLast]} onPress={() => router.push('/notificaciones')}>
+          <Ionicons name="notifications-outline" size={17} color={colors.ink70} />
+          <Text style={styles.actionRowText}>Notificaciones</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.ink38} />
         </Pressable>
       </View>
