@@ -98,23 +98,17 @@ export default function SignIn() {
         <Text style={styles.primaryButtonText}>{submitting ? 'Entrando…' : 'Entrar'}</Text>
       </Pressable>
 
-      <View style={styles.dividerRow}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>o continúa con</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
       <Pressable
-        style={({ pressed }) => [styles.oauthButton, pressed && { opacity: 0.9 }]}
+        style={({ pressed }) => [styles.googleButton, pressed && { opacity: 0.9 }]}
         onPress={onGoogle}
         disabled={oauthLoading}
       >
         {oauthLoading ? (
-          <ActivityIndicator color={colors.ink} size="small" />
+          <ActivityIndicator color={colors.background} size="small" />
         ) : (
           <>
-            <Ionicons name="logo-google" size={17} color={colors.ink} />
-            <Text style={styles.oauthButtonText}>Continuar con Google</Text>
+            <Ionicons name="logo-google" size={17} color={colors.background} />
+            <Text style={styles.googleButtonText}>Continuar con Google</Text>
           </>
         )}
       </Pressable>
@@ -166,23 +160,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   primaryButtonText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 15.5 },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.lg },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
-  dividerText: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: colors.ink38 },
-  oauthButton: {
+  googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.card,
+    height: 48,
+    backgroundColor: colors.terracotta,
     borderRadius: radii.pill,
-    paddingVertical: 15,
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
-  oauthButtonText: { fontFamily: fonts.sansBold, color: colors.ink, fontSize: 14.5 },
-  appleButton: { height: 48, marginTop: spacing.md },
+  googleButtonText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 14.5 },
+  appleButton: { alignSelf: 'stretch', height: 48, marginTop: spacing.md },
   link: { marginTop: spacing.lg, alignSelf: 'center' },
   linkText: { fontFamily: fonts.sansSemiBold, color: colors.terracotta, fontSize: 13.5 },
 });
