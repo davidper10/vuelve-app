@@ -5,6 +5,8 @@ export type ReminderTime = { hour: number; minute: number };
 export type NotificationPrefs = {
   recuerdosEnabled: boolean;
   diarioEnabled: boolean;
+  colaborativosEnabled: boolean;
+  nfcEnabled: boolean;
   reminderTime: ReminderTime;
 };
 
@@ -13,6 +15,8 @@ const STORAGE_KEY = '@vuelve/notification-prefs/v1';
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   recuerdosEnabled: false,
   diarioEnabled: false,
+  colaborativosEnabled: false,
+  nfcEnabled: false,
   reminderTime: { hour: 9, minute: 0 },
 };
 

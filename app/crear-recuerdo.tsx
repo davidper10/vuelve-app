@@ -130,6 +130,12 @@ export default function CrearRecuerdo() {
     if (failedUploads > 0) {
       setError(`El recuerdo se creó, pero ${failedUploads} foto(s) no se pudieron subir.`);
     }
+    const successCount = photos.length - failedUploads;
+    if (successCount > 0) {
+      supabase.functions
+        .invoke('send-push', { body: { type: 'photos_added', tripId, momentId: moment.id, count: successCount } })
+        .catch(() => {});
+    }
     router.replace(`/momento/${moment.id}`);
   };
 

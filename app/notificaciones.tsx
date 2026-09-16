@@ -4,10 +4,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { safeBack } from '@/lib/navigation';
-import { useNotifications } from '@/lib/notifications-context';
+import { useNotifications, type ToggleResult } from '@/lib/notifications-context';
 import type { ReminderTime } from '@/lib/notification-prefs';
 
-type Category = 'recuerdos' | 'diario';
+type Category = 'recuerdos' | 'diario' | 'colaborativos' | 'nfc';
+
+const CATEGORIES: Category[] = ['recuerdos', 'diario', 'colaborativos', 'nfc'];
 
 const COPY: Record<Category, { title: string; description: string; justify: string }> = {
   recuerdos: {
@@ -21,6 +23,18 @@ const COPY: Record<Category, { title: string; description: string; justify: stri
     description: 'Te avisamos el día antes de que termine un viaje.',
     justify:
       'Te avisaremos el día antes de que termine un viaje, para que no se te olvide escribir cómo fue. Podrás desactivarlo cuando quieras.',
+  },
+  colaborativos: {
+    title: 'Álbumes colaborativos',
+    description: 'Te avisamos cuando alguien añade fotos o se une a un viaje compartido.',
+    justify:
+      'Te avisaremos cuando alguien añada fotos o se una a un viaje compartido contigo. Podrás desactivarlo cuando quieras.',
+  },
+  nfc: {
+    title: 'Actividad NFC',
+    description: 'Te avisamos cuando alguien abre un imán NFC que has vinculado.',
+    justify:
+      'Te avisaremos cuando alguien abra un imán NFC que hayas vinculado. Podrás desactivarlo cuando quieras.',
   },
 };
 
@@ -39,15 +53,28 @@ function timeToDate(time: ReminderTime): Date {
 }
 
 export default function Notificaciones() {
-  const { prefs, setRecuerdosEnabled, setDiarioEnabled, setReminderTime } = useNotifications();
+  const { prefs, setRecuerdosEnabled, setDiarioEnabled, setColaborativosEnabled, setNfcEnabled, setReminderTime } =
+    useNotifications();
   const [justifying, setJustifying] = useState<Category | null>(null);
   const [denied, setDenied] = useState<Category | null>(null);
   const [activating, setActivating] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draftTime, setDraftTime] = useState(() => timeToDate(prefs.reminderTime));
 
-  const isEnabled = (category: Category) => (category === 'recuerdos' ? prefs.recuerdosEnabled : prefs.diarioEnabled);
-  const setEnabled = (category: Category) => (category === 'recuerdos' ? setRecuerdosEnabled : setDiarioEnabled);
+  const enabledMap: Record<Category, boolean> = {
+    recuerdos: prefs.recuerdosEnabled,
+    diario: prefs.diarioEnabled,
+    colaborativos: prefs.colaborativosEnabled,
+    nfc: prefs.nfcEnabled,
+  };
+  const setterMap: Record<Category, (enabled: boolean) => Promise<ToggleResult>> = {
+    recuerdos: setRecuerdosEnabled,
+    diario: setDiarioEnabled,
+    colaborativos: setColaborativosEnabled,
+    nfc: setNfcEnabled,
+  };
+  const isEnabled = (category: Category) => enabledMap[category];
+  const setEnabled = (category: Category) => setterMap[category];
 
   const onToggle = (category: Category, next: boolean) => {
     setDenied(null);
@@ -95,9 +122,9 @@ export default function Notificaciones() {
       </View>
 
       <View style={styles.card}>
-        {(['recuerdos', 'diario'] as Category[]).map((category, i) => (
+        {CATEGORIES.map((category, i) => (
           <View key={category}>
-            <View style={[styles.row, i === 0 && styles.rowBorder]}>
+            <View style={[styles.row, i < CATEGORIES.length - 1 && styles.rowBorder]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{COPY[category].title}</Text>
                 <Text style={styles.rowDescription}>{COPY[category].description}</Text>

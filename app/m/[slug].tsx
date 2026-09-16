@@ -18,7 +18,7 @@ export default function ResolverNfc() {
     (async () => {
       const { data } = await supabase
         .from('nfc_tags')
-        .select('link_type, trip_id, moment_id, status')
+        .select('id, link_type, trip_id, moment_id, status')
         .eq('public_slug', slug)
         .eq('status', 'active')
         .maybeSingle();
@@ -27,6 +27,7 @@ export default function ResolverNfc() {
         setError('Este enlace no existe o ha sido desactivado.');
         return;
       }
+      supabase.functions.invoke('send-push', { body: { type: 'nfc_scanned', tagId: data.id } }).catch(() => {});
       if (data.link_type === 'moment' && data.moment_id) {
         router.replace(`/momento/${data.moment_id}`);
       } else if (data.trip_id) {

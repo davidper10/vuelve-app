@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type PropsWithChildren 
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 import {
   DEFAULT_NOTIFICATION_PREFS,
   getNotificationPrefs,
@@ -11,17 +12,23 @@ import {
 } from '@/lib/notification-prefs';
 import {
   cancelAllVuelveNotifications,
+  getNotificationPermissionStatus,
   refreshScheduledNotifications,
   requestNotificationPermission,
 } from '@/lib/notifications';
+import { registerPushToken } from '@/lib/push-token';
 
-type ToggleResult = { enabled: boolean; permissionDenied?: boolean };
+export type ToggleResult = { enabled: boolean; permissionDenied?: boolean };
+
+type CategoryKey = 'recuerdosEnabled' | 'diarioEnabled' | 'colaborativosEnabled' | 'nfcEnabled';
 
 type NotificationsContextValue = {
   prefs: NotificationPrefs;
   loading: boolean;
   setRecuerdosEnabled: (enabled: boolean) => Promise<ToggleResult>;
   setDiarioEnabled: (enabled: boolean) => Promise<ToggleResult>;
+  setColaborativosEnabled: (enabled: boolean) => Promise<ToggleResult>;
+  setNfcEnabled: (enabled: boolean) => Promise<ToggleResult>;
   setReminderTime: (time: ReminderTime) => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -34,6 +41,11 @@ function routeForResponse(response: Notifications.NotificationResponse) {
     | undefined;
   if (data?.type === 'recuerdo' && data.momentId) router.push(`/momento/${data.momentId}`);
   else if (data?.type === 'diario' && data.tripId) router.push(`/viaje/${data.tripId}?tab=diario`);
+  else if (data?.type === 'colaborativo_fotos' && data.momentId) router.push(`/momento/${data.momentId}`);
+  else if (data?.type === 'colaborativo_fotos' && data.tripId) router.push(`/viaje/${data.tripId}`);
+  else if (data?.type === 'colaborativo_miembro' && data.tripId) router.push(`/viaje/${data.tripId}`);
+  else if (data?.type === 'nfc_actividad' && data.momentId) router.push(`/momento/${data.momentId}`);
+  else if (data?.type === 'nfc_actividad' && data.tripId) router.push(`/viaje/${data.tripId}`);
 }
 
 export function NotificationsProvider({ children }: PropsWithChildren) {
@@ -66,7 +78,13 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!session) {
       cancelAllVuelveNotifications();
+      return;
     }
+    (async () => {
+      if ((await getNotificationPermissionStatus()) === 'granted') {
+        registerPushToken(session.user.id);
+      }
+    })();
   }, [session?.user.id]);
 
   const persistAndRefresh = async (patch: Partial<NotificationPrefs>) => {
@@ -76,17 +94,30 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
     return next;
   };
 
-  const setCategoryEnabled = async (
-    key: 'recuerdosEnabled' | 'diarioEnabled',
-    enabled: boolean
-  ): Promise<ToggleResult> => {
+  const mirrorServerPrefs = (next: NotificationPrefs) => {
+    if (!session?.user.id) return;
+    supabase
+      .from('notification_preferences')
+      .upsert(
+        { user_id: session.user.id, colaborativos: next.colaborativosEnabled, nfc: next.nfcEnabled },
+        { onConflict: 'user_id' }
+      )
+      .then();
+  };
+
+  const setCategoryEnabled = async (key: CategoryKey, enabled: boolean): Promise<ToggleResult> => {
+    const isServerCategory = key === 'colaborativosEnabled' || key === 'nfcEnabled';
+
     if (!enabled) {
-      await persistAndRefresh({ [key]: false });
+      const next = await persistAndRefresh({ [key]: false });
+      if (isServerCategory) mirrorServerPrefs(next);
       return { enabled: false };
     }
     const granted = await requestNotificationPermission();
     if (!granted) return { enabled: false, permissionDenied: true };
-    await persistAndRefresh({ [key]: true });
+    const next = await persistAndRefresh({ [key]: true });
+    if (isServerCategory) mirrorServerPrefs(next);
+    if (session?.user.id) registerPushToken(session.user.id);
     return { enabled: true };
   };
 
@@ -95,6 +126,8 @@ export function NotificationsProvider({ children }: PropsWithChildren) {
     loading,
     setRecuerdosEnabled: (enabled) => setCategoryEnabled('recuerdosEnabled', enabled),
     setDiarioEnabled: (enabled) => setCategoryEnabled('diarioEnabled', enabled),
+    setColaborativosEnabled: (enabled) => setCategoryEnabled('colaborativosEnabled', enabled),
+    setNfcEnabled: (enabled) => setCategoryEnabled('nfcEnabled', enabled),
     setReminderTime: async (time) => {
       await persistAndRefresh({ reminderTime: time });
     },

@@ -203,6 +203,14 @@ export default function MomentoDetail() {
 
     setUploading(false);
     if (failed > 0) notify('Aviso', `${failed} archivo(s) no se pudieron subir.`);
+    const successCount = result.assets.length - failed;
+    if (successCount > 0) {
+      supabase.functions
+        .invoke('send-push', {
+          body: { type: 'photos_added', tripId: moment.trip_id, momentId: moment.id, count: successCount },
+        })
+        .catch(() => {});
+    }
     load();
   };
 

@@ -52,6 +52,9 @@ export default function UnirseATrip() {
             user_id: session.user.id,
             role: 'editor',
           });
+          supabase.functions
+            .invoke('send-push', { body: { type: 'member_joined', tripId: share.trip_id } })
+            .catch(() => {});
         }
       }
 
