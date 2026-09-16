@@ -1,19 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 
 export default function SignIn() {
   const insets = useSafeAreaInsets();
-  const { signInWithIdentifier, signInWithOAuth } = useAuth();
+  const { signInWithIdentifier, signInWithGoogle, signInWithApple } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
+    }
+  }, []);
 
   const onSubmit = async () => {
     setError(null);
@@ -26,8 +34,14 @@ export default function SignIn() {
   const onGoogle = async () => {
     setError(null);
     setOauthLoading(true);
-    const { error: err } = await signInWithOAuth('google');
+    const { error: err } = await signInWithGoogle();
     setOauthLoading(false);
+    if (err) setError(err);
+  };
+
+  const onApple = async () => {
+    setError(null);
+    const { error: err } = await signInWithApple();
     if (err) setError(err);
   };
 
@@ -72,6 +86,10 @@ export default function SignIn() {
 
       {!!error && <Text style={styles.error}>{error}</Text>}
 
+      <Link href="/(auth)/recuperar-contrasena" style={styles.forgotLink}>
+        <Text style={styles.forgotLinkText}>¿Olvidaste tu contraseña?</Text>
+      </Link>
+
       <Pressable
         style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.9 }]}
         onPress={onSubmit}
@@ -101,6 +119,16 @@ export default function SignIn() {
         )}
       </Pressable>
 
+      {appleAvailable && (
+        <AppleAuthentication.AppleAuthenticationButton
+          buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          cornerRadius={24}
+          style={styles.appleButton}
+          onPress={onApple}
+        />
+      )}
+
       <Link href="/(auth)/sign-up" style={styles.link}>
         <Text style={styles.linkText}>¿No tienes cuenta? Crea una</Text>
       </Link>
@@ -128,6 +156,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   error: { fontFamily: fonts.sansMedium, color: colors.terracotta, marginBottom: spacing.sm, fontSize: 13 },
+  forgotLink: { alignSelf: 'flex-end', marginBottom: spacing.sm },
+  forgotLinkText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 12.5 },
   primaryButton: {
     backgroundColor: colors.ink,
     borderRadius: radii.pill,
@@ -152,6 +182,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   oauthButtonText: { fontFamily: fonts.sansBold, color: colors.ink, fontSize: 14.5 },
+  appleButton: { height: 48, marginTop: spacing.md },
   link: { marginTop: spacing.lg, alignSelf: 'center' },
   linkText: { fontFamily: fonts.sansSemiBold, color: colors.terracotta, fontSize: 13.5 },
 });

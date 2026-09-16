@@ -10,8 +10,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.vuelveapp.mobile",
+      "usesAppleSignIn": true,
       "associatedDomains": [
-        "applinks:savetrip.vercel.app?mode=developer"
+        "applinks:savetrip.vercel.app"
       ]
     },
     "android": {
@@ -42,6 +43,12 @@
             "DEFAULT"
           ]
         }
+      ],
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.NFC"
       ]
     },
     "web": {
@@ -83,6 +90,13 @@
       ],
       "expo-web-browser",
       "@react-native-community/datetimepicker",
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1079470289807-kuk8h04gckidbmngldjng655hbfh4b4o"
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -99,10 +113,19 @@
         }
       ],
       "expo-localization",
-      "expo-video"
+      "expo-video",
+      "expo-sqlite",
+      "posthog-react-native/expo"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "06763cc3-cb16-456f-9e96-10fb60d5bd08"
+      }
+    },
+    "owner": "davidper10s-team"
   }
 }
