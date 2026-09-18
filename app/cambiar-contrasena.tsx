@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
 
 export default function CambiarContrasena() {
+  const insets = useSafeAreaInsets();
   const { changePassword } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -31,7 +33,10 @@ export default function CambiarContrasena() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.xl }]}
+    >
       <Text style={styles.title}>Cambiar contraseña</Text>
 
       <View style={styles.field}>
@@ -86,7 +91,7 @@ export default function CambiarContrasena() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.xl, paddingTop: spacing.xxl },
+  scroll: { padding: spacing.xl },
   title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink, marginBottom: spacing.lg },
   field: { marginBottom: spacing.md },
   label: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.ink70, marginBottom: 6 },

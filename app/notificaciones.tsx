@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { safeBack } from '@/lib/navigation';
 import { useNotifications, type ToggleResult } from '@/lib/notifications-context';
@@ -53,6 +54,7 @@ function timeToDate(time: ReminderTime): Date {
 }
 
 export default function Notificaciones() {
+  const insets = useSafeAreaInsets();
   const { prefs, setRecuerdosEnabled, setDiarioEnabled, setColaborativosEnabled, setNfcEnabled, setReminderTime } =
     useNotifications();
   const [justifying, setJustifying] = useState<Category | null>(null);
@@ -113,7 +115,10 @@ export default function Notificaciones() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.xl }]}
+    >
       <View style={styles.headerRow}>
         <Pressable style={styles.backBtn} onPress={() => safeBack('/(tabs)/perfil')}>
           <Ionicons name="chevron-back" size={20} color={colors.ink} />
@@ -201,7 +206,7 @@ export default function Notificaciones() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.lg, paddingTop: 60, paddingBottom: 120, gap: spacing.lg },
+  scroll: { padding: spacing.lg, paddingBottom: 120, gap: spacing.lg },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   backBtn: {
     width: 36,

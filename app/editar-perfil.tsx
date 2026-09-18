@@ -3,12 +3,14 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
 
 export default function EditarPerfil() {
+  const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const [fullName, setFullName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -94,7 +96,10 @@ export default function EditarPerfil() {
   const initial = fullName.trim().charAt(0).toUpperCase() || 'A';
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.scroll}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.xl }]}
+    >
       <Text style={styles.title}>Editar perfil</Text>
 
       <Pressable style={styles.avatarPicker} onPress={pickAvatar}>
@@ -140,7 +145,7 @@ export default function EditarPerfil() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.xl, paddingTop: spacing.xxl, alignItems: 'center' },
+  scroll: { padding: spacing.xl, alignItems: 'center' },
   title: { fontFamily: fonts.serif, fontSize: 30, color: colors.ink, marginBottom: spacing.lg, alignSelf: 'flex-start' },
   avatarPicker: { marginBottom: spacing.lg, position: 'relative' },
   avatarImg: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.sandDark },
