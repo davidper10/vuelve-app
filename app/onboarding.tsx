@@ -20,5 +20,5 @@ export default function Onboarding() {
     return <WelcomeOverview onContinue={() => setShowWelcome(false)} onSkip={finish} />;
   }
 
-  return <OnboardingCarousel onFinish={finish} />;
+  return <OnboardingCarousel onFinish={finish} onBack={() => setShowWelcome(true)} />;
 }

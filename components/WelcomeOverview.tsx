@@ -1,8 +1,9 @@
-import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
+import { CoverImage } from './CoverImage';
 
 // Primera pantalla del onboarding (tras registrarse). Le siguen las 3
 // páginas de OnboardingCarousel -- de ahí los 4 puntos, con el primero
@@ -22,25 +23,14 @@ export function WelcomeOverview({
   onSkip?: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-
-  // resizeMode="cover" + StyleSheet.absoluteFill no estira el <Image> en el
-  // preview web (usa el tamaño intrínseco del archivo). Calculamos a mano el
-  // mismo efecto "cover", igual que en la pantalla de login.
-  const scale = Math.max(screenWidth / IMAGE_NATURAL_WIDTH, screenHeight / IMAGE_NATURAL_HEIGHT);
-  const imageWidth = IMAGE_NATURAL_WIDTH * scale;
-  const imageHeight = IMAGE_NATURAL_HEIGHT * scale;
-  const imageLeft = -(imageWidth - screenWidth) / 2;
-  const imageTop = -(imageHeight - screenHeight) / 2;
 
   return (
     <View style={styles.screen}>
-      <View style={styles.imageClip}>
-        <Image
-          source={require('../assets/mascota/fondo_login.png')}
-          style={{ width: imageWidth, height: imageHeight, left: imageLeft, top: imageTop }}
-        />
-      </View>
+      <CoverImage
+        source={require('../assets/mascota/fondo_login.png')}
+        naturalWidth={IMAGE_NATURAL_WIDTH}
+        naturalHeight={IMAGE_NATURAL_HEIGHT}
+      />
 
       <View style={[styles.topRow, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.logoRow}>
@@ -83,7 +73,6 @@ export function WelcomeOverview({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  imageClip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
