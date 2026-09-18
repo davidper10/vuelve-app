@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as Sentry from '@sentry/react-native';
 import { PostHogProvider } from 'posthog-react-native';
@@ -21,10 +21,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { PremiumProvider } from '@/lib/premium-context';
 import { NotificationsProvider } from '@/lib/notifications-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
-import { WelcomeOverview } from '@/components/WelcomeOverview';
 import { colors } from '@/constants/theme';
-
-type Stage = 'welcome' | 'app';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -46,7 +43,6 @@ function RootLayout() {
     DMSerifDisplay_400Regular_Italic,
   });
   const fontsLoaded = interLoaded && serifLoaded;
-  const [stage, setStage] = useState<Stage>('welcome');
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
@@ -66,23 +62,20 @@ function RootLayout() {
             <PremiumProvider>
               <NotificationsProvider>
                 <ConfirmProvider>
-                  {stage === 'app' && (
-                    <Stack
-                      screenOptions={{
-                        headerShown: false,
-                        contentStyle: { backgroundColor: colors.background },
-                      }}
-                    >
-                      <Stack.Screen name="(auth)" />
-                      <Stack.Screen name="(tabs)" />
-                      <Stack.Screen name="viaje/[id]" />
-                      <Stack.Screen name="momento/[id]" />
-                      <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
-                      <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
-                      <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
-                    </Stack>
-                  )}
-                  {stage === 'welcome' && <WelcomeOverview onContinue={() => setStage('app')} />}
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      contentStyle: { backgroundColor: colors.background },
+                    }}
+                  >
+                    <Stack.Screen name="(auth)" />
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="viaje/[id]" />
+                    <Stack.Screen name="momento/[id]" />
+                    <Stack.Screen name="crear-viaje" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="vincular-nfc" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="seleccionar-lugar" options={{ presentation: 'modal' }} />
+                  </Stack>
                 </ConfirmProvider>
               </NotificationsProvider>
             </PremiumProvider>

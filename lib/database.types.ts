@@ -348,6 +348,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_premium: boolean
+          onboarding_completed: boolean
           username: string | null
         }
         Insert: {
@@ -356,6 +357,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_premium?: boolean
+          onboarding_completed?: boolean
           username?: string | null
         }
         Update: {
@@ -364,6 +366,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_premium?: boolean
+          onboarding_completed?: boolean
           username?: string | null
         }
         Relationships: []
