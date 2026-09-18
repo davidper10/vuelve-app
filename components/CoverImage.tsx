@@ -7,18 +7,29 @@ export function CoverImage({
   source,
   naturalWidth,
   naturalHeight,
+  fit = 'cover',
+  verticalBias = 0.5,
 }: {
   source: ImageSourcePropType;
   naturalWidth: number;
   naturalHeight: number;
+  // 'cover' (por defecto) escala para cubrir ancho y alto, recortando lo
+  // que sobre. 'width' escala solo por el ancho -- sin recortar ni
+  // ampliar de más -- y puede dejar un hueco vertical; ese hueco se
+  // rellena con el fondo de la pantalla (colocar detrás un color a juego
+  // con el de la propia imagen para que no se note la costura).
+  fit?: 'cover' | 'width';
+  // Reparte el sobrante/hueco vertical: 0 ancla la imagen arriba, 0.5
+  // centra (por defecto), 1 ancla abajo (deja el hueco arriba).
+  verticalBias?: number;
 }) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-  const scale = Math.max(screenWidth / naturalWidth, screenHeight / naturalHeight);
+  const scale = fit === 'width' ? screenWidth / naturalWidth : Math.max(screenWidth / naturalWidth, screenHeight / naturalHeight);
   const imageWidth = naturalWidth * scale;
   const imageHeight = naturalHeight * scale;
   const imageLeft = -(imageWidth - screenWidth) / 2;
-  const imageTop = -(imageHeight - screenHeight) / 2;
+  const imageTop = -(imageHeight - screenHeight) * verticalBias;
 
   return (
     <View style={styles.clip}>

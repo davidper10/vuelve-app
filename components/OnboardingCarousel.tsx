@@ -6,16 +6,17 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { CoverImage } from './CoverImage';
 import { FloatingMascot } from './FloatingMascot';
 
-// El primer paso ya tiene el diseño nuevo (fondo ilustrado a pantalla
-// completa); los pasos 2 y 3 conservan el diseño anterior (mascota
-// centrada) hasta que lleguen sus mockups. Por eso sus puntos de paginación
-// no coinciden todavía (4 en el paso 1, previendo un 4º paso futuro; 3 en
-// los pasos 2-3, el total real de momento).
+// El paso 1 y el paso NFC ya tienen el diseño nuevo (fondo ilustrado a
+// pantalla completa); "Guarda tus recuerdos" conserva el diseño anterior
+// (mascota centrada) hasta que llegue su mockup. El número de "paso" que
+// se muestra es explícito por pantalla (no se calcula por posición en el
+// array), así se puede reordenar/ajustar sin que cambie el rótulo.
 const TOTAL_STEPS_PREVIEW = 4;
 
 const STEPS = [
   {
     variant: 'hero' as const,
+    stepNumber: 1,
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/onboarding/crear_viajes.png'),
     imageNaturalWidth: 850,
@@ -31,11 +32,19 @@ const STEPS = [
     body: 'Añade fotos, notas y los momentos especiales de cada día, todo en un mismo sitio.',
   },
   {
-    variant: 'mascot' as const,
+    variant: 'feature' as const,
+    stepNumber: 2,
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    image: require('../assets/mascota/saludo.png'),
-    title: 'Vincula un NFC',
-    body: 'Pega un sticker NFC a un objeto físico. Al acercar el móvil, el recuerdo se abre al instante.',
+    image: require('../assets/onboarding/nfc.png'),
+    imageNaturalWidth: 941,
+    imageNaturalHeight: 1672,
+    title: 'Añade un NFC\na tus recuerdos',
+    body: 'Asocia un tag NFC a tus viajes para guardar recuerdos al instante. Acerca tu móvil y añade fotos, notas o lugares, estés donde estés.',
+    features: [
+      { icon: 'flash' as const, title: 'Rápido y fácil', body: 'Acerca tu móvil al tag NFC y añade un recuerdo en segundos.' },
+      { icon: 'link' as const, title: 'Siempre contigo', body: 'Llévalo en tu llavero, mochila o donde quieras.' },
+      { icon: 'heart' as const, title: 'Revive la experiencia', body: 'Cada vez que lo uses, seguirás construyendo la historia de tu viaje.' },
+    ],
   },
 ];
 
@@ -89,7 +98,7 @@ export function OnboardingCarousel({ onFinish, onBack }: { onFinish: () => void;
         <View style={styles.heroTextBlock}>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
-              PASO {step + 1} DE {TOTAL_STEPS_PREVIEW}
+              PASO {current.stepNumber} DE {TOTAL_STEPS_PREVIEW}
             </Text>
           </View>
           <Text style={styles.heroTitle}>{current.title}</Text>
@@ -100,9 +109,72 @@ export function OnboardingCarousel({ onFinish, onBack }: { onFinish: () => void;
           <View style={styles.dotsCenterWrap} pointerEvents="none">
             <View style={styles.dots}>
               {Array.from({ length: TOTAL_STEPS_PREVIEW }).map((_, i) => (
-                <View key={i} style={[styles.heroDot, i === step && styles.heroDotOn]} />
+                <View key={i} style={[styles.heroDot, i === current.stepNumber - 1 && styles.heroDotOn]} />
               ))}
             </View>
+          </View>
+
+          <Pressable style={({ pressed }) => [styles.roundButton, pressed && { opacity: 0.9 }]} onPress={onNext}>
+            <Ionicons name="arrow-forward" size={20} color={colors.background} />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  if (current.variant === 'feature') {
+    return (
+      <View style={styles.screen}>
+        <CoverImage
+          source={current.image}
+          naturalWidth={current.imageNaturalWidth}
+          naturalHeight={current.imageNaturalHeight}
+          fit="width"
+          verticalBias={1}
+        />
+
+        <View style={[styles.featureTopRow, { paddingTop: insets.top + spacing.md }]}>
+          <Pressable style={styles.circleBtn} onPress={onPrev} hitSlop={8}>
+            <Ionicons name="chevron-back" size={20} color={colors.ink} />
+          </Pressable>
+          <Pressable onPress={onFinish} hitSlop={8}>
+            <Text style={styles.skipText}>Omitir</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.heroTextBlock}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              PASO {current.stepNumber} DE {TOTAL_STEPS_PREVIEW}
+            </Text>
+          </View>
+          <Text style={styles.heroTitle}>{current.title}</Text>
+          <Text style={styles.heroBody}>{current.body}</Text>
+        </View>
+
+        <View style={styles.featureList}>
+          {current.features.map((feature) => (
+            <View key={feature.title} style={styles.featureRow}>
+              <View style={styles.featureIcon}>
+                <Ionicons name={feature.icon} size={18} color={colors.sageDark} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.featureTitle}>{feature.title}</Text>
+                <Text style={styles.featureBody}>{feature.body}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={[styles.featureBottomBar, { paddingBottom: insets.bottom + spacing.md, marginTop: 'auto' }]}>
+          <Pressable style={styles.circleBtn} onPress={onPrev} hitSlop={8}>
+            <Ionicons name="arrow-back" size={20} color={colors.ink} />
+          </Pressable>
+
+          <View style={styles.dots}>
+            {Array.from({ length: TOTAL_STEPS_PREVIEW }).map((_, i) => (
+              <View key={i} style={[styles.heroDot, i === current.stepNumber - 1 && styles.heroDotOn]} />
+            ))}
           </View>
 
           <Pressable style={({ pressed }) => [styles.roundButton, pressed && { opacity: 0.9 }]} onPress={onNext}>
@@ -235,5 +307,50 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
+  },
+
+  featureTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+  },
+  circleBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.sand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureList: {
+    marginTop: spacing.xl,
+    marginHorizontal: spacing.lg,
+    backgroundColor: 'rgba(250,248,244,0.97)',
+    borderRadius: radii.xl,
+    padding: spacing.md,
+    gap: spacing.md,
+    maxWidth: '72%',
+  },
+  featureRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
+  featureIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.sageLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureTitle: { fontFamily: fonts.serif, fontSize: 16, color: colors.ink },
+  featureBody: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: colors.ink55, marginTop: 2, lineHeight: 17 },
+  featureBottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
   },
 });
