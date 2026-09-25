@@ -4,7 +4,7 @@ import Purchases, { type CustomerInfo } from 'react-native-purchases';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 
-export const ENTITLEMENT_ID = 'premium';
+export const ENTITLEMENT_ID = 'save_trip_pro';
 
 const IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
 const ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY;
