@@ -6,11 +6,12 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { CoverImage } from './CoverImage';
 import { FloatingMascot } from './FloatingMascot';
 
-// El paso 1 y el paso NFC ya tienen el diseño nuevo (fondo ilustrado a
-// pantalla completa); "Guarda tus recuerdos" conserva el diseño anterior
-// (mascota centrada) hasta que llegue su mockup. El número de "paso" que
-// se muestra es explícito por pantalla (no se calcula por posición en el
-// array), así se puede reordenar/ajustar sin que cambie el rótulo.
+// 3 de los 4 pasos ya tienen el diseño nuevo (fondo ilustrado a pantalla
+// completa); "Guarda tus recuerdos" conserva el diseño anterior (mascota
+// centrada) hasta que llegue su mockup -- por eso queda en medio sin
+// número de paso visible. El número que se muestra es explícito por
+// pantalla (no se calcula por posición en el array), así se puede
+// reordenar/ajustar sin que cambie el rótulo.
 const TOTAL_STEPS_PREVIEW = 4;
 
 const STEPS = [
@@ -44,6 +45,36 @@ const STEPS = [
       { icon: 'flash' as const, title: 'Rápido y fácil', body: 'Acerca tu móvil al tag NFC y añade un recuerdo en segundos.' },
       { icon: 'link' as const, title: 'Siempre contigo', body: 'Llévalo en tu llavero, mochila o donde quieras.' },
       { icon: 'heart' as const, title: 'Revive la experiencia', body: 'Cada vez que lo uses, seguirás construyendo la historia de tu viaje.' },
+    ],
+  },
+  {
+    variant: 'feature' as const,
+    stepNumber: 3,
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    image: require('../assets/onboarding/recrear.png'),
+    imageNaturalWidth: 941,
+    imageNaturalHeight: 1672,
+    title: 'Recrea tus viajes\ncuando quieras',
+    body: 'Revive cada detalle de tus aventuras con el mapa, tus fotos, notas y recuerdos. Todo en un solo lugar, siempre contigo.',
+    features: [
+      { icon: 'map' as const, title: 'Explora el mapa', body: 'Visualiza los lugares que has visitado y sigue tu ruta paso a paso.' },
+      { icon: 'images' as const, title: 'Revive tus recuerdos', body: 'Consulta tus fotos, notas y momentos especiales en cualquier momento.' },
+      { icon: 'time' as const, title: 'Vuelve a sentirlo', body: 'Redescubre cada viaje como si estuvieras allí otra vez.' },
+    ],
+  },
+  {
+    variant: 'feature' as const,
+    stepNumber: 4,
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    image: require('../assets/onboarding/share.png'),
+    imageNaturalWidth: 941,
+    imageNaturalHeight: 1672,
+    title: 'Comparte tus\nhistorias',
+    body: 'Inspira a otros viajeros compartiendo tus viajes, fotos y recuerdos. Elige qué quieres mostrar y mantén el control de tu privacidad.',
+    features: [
+      { icon: 'people' as const, title: 'Comparte tus viajes', body: 'Publica tus experiencias para inspirar a otros viajeros.' },
+      { icon: 'link' as const, title: 'Invita y colabora', body: 'Comparte un viaje con amigos o familia y añadid recuerdos juntos.' },
+      { icon: 'lock-closed' as const, title: 'Tú decides', body: 'Controla qué compartes y con quién. Tu privacidad siempre es lo primero.' },
     ],
   },
 ];
