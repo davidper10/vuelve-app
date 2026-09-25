@@ -6,7 +6,6 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useTrips } from '@/lib/use-trips';
 import { supabase } from '@/lib/supabase';
-import { notify } from '@/lib/confirm';
 import { useNotifications } from '@/lib/notifications-context';
 import { TripCard } from '@/components/TripCard';
 import { FeaturedTripCard } from '@/components/FeaturedTripCard';
@@ -121,10 +120,7 @@ export default function Home() {
             <Text style={styles.greeting}>Buenos días, {firstName} 👋</Text>
             <Text style={styles.question}>¿A dónde quieres volver hoy?</Text>
           </View>
-          <Pressable
-            style={styles.bellBtn}
-            onPress={() => notify('Notificaciones', 'No hay notificaciones nuevas.')}
-          >
+          <Pressable style={styles.bellBtn} onPress={() => router.push('/notificaciones')}>
             <Ionicons name="notifications-outline" size={17} color={colors.ink} />
           </Pressable>
         </View>
