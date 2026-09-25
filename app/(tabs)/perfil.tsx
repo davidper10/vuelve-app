@@ -136,7 +136,6 @@ export default function Perfil() {
 
         <View style={styles.quoteDivider} />
         <Text style={styles.quote}>"La vida es mejor cuando la vives viajando"</Text>
-        <Ionicons name="leaf-outline" size={15} color={colors.sage} style={{ marginTop: 6 }} />
       </View>
 
       <View style={styles.statsRow}>
