@@ -1,17 +1,13 @@
-import { useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { CoverImage } from './CoverImage';
-import { FloatingMascot } from './FloatingMascot';
 
-// 3 de los 4 pasos ya tienen el diseño nuevo (fondo ilustrado a pantalla
-// completa); "Guarda tus recuerdos" conserva el diseño anterior (mascota
-// centrada) hasta que llegue su mockup -- por eso queda en medio sin
-// número de paso visible. El número que se muestra es explícito por
-// pantalla (no se calcula por posición en el array), así se puede
-// reordenar/ajustar sin que cambie el rótulo.
+// El número que se muestra en cada paso es explícito por pantalla (no se
+// calcula por posición en el array), así se puede reordenar/ajustar sin
+// que cambie el rótulo.
 const TOTAL_STEPS_PREVIEW = 4;
 
 const STEPS = [
@@ -24,13 +20,6 @@ const STEPS = [
     imageNaturalHeight: 1850,
     title: 'Crea tus viajes\ny guarda cada momento',
     body: 'Organiza tus aventuras en un solo lugar y añade fotos, notas y lugares para revivirlas siempre que quieras.',
-  },
-  {
-    variant: 'mascot' as const,
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    image: require('../assets/mascota/registro.png'),
-    title: 'Guarda tus recuerdos',
-    body: 'Añade fotos, notas y los momentos especiales de cada día, todo en un mismo sitio.',
   },
   {
     variant: 'feature' as const,
@@ -82,19 +71,11 @@ const STEPS = [
 export function OnboardingCarousel({ onFinish, onBack }: { onFinish: () => void; onBack?: () => void }) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
-  const fade = useRef(new Animated.Value(1)).current;
   const isFirst = step === 0;
   const isLast = step === STEPS.length - 1;
   const current = STEPS[step];
 
-  const goTo = (next: number) => {
-    Animated.sequence([
-      Animated.timing(fade, { toValue: 0, duration: 140, useNativeDriver: true }),
-    ]).start(() => {
-      setStep(next);
-      Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }).start();
-    });
-  };
+  const goTo = (next: number) => setStep(next);
 
   const onNext = () => {
     if (isLast) {
@@ -136,13 +117,15 @@ export function OnboardingCarousel({ onFinish, onBack }: { onFinish: () => void;
           <Text style={styles.heroBody}>{current.body}</Text>
         </View>
 
-        <View style={[styles.heroBottomRow, { paddingBottom: insets.bottom + spacing.lg }]}>
-          <View style={styles.dotsCenterWrap} pointerEvents="none">
-            <View style={styles.dots}>
-              {Array.from({ length: TOTAL_STEPS_PREVIEW }).map((_, i) => (
-                <View key={i} style={[styles.heroDot, i === current.stepNumber - 1 && styles.heroDotOn]} />
-              ))}
-            </View>
+        <View style={[styles.featureBottomBar, { paddingBottom: insets.bottom + spacing.md, marginTop: 'auto' }]}>
+          <Pressable style={styles.circleBtn} onPress={onPrev} hitSlop={8}>
+            <Ionicons name="arrow-back" size={20} color={colors.ink} />
+          </Pressable>
+
+          <View style={styles.dots}>
+            {Array.from({ length: TOTAL_STEPS_PREVIEW }).map((_, i) => (
+              <View key={i} style={[styles.heroDot, i === current.stepNumber - 1 && styles.heroDotOn]} />
+            ))}
           </View>
 
           <Pressable style={({ pressed }) => [styles.roundButton, pressed && { opacity: 0.9 }]} onPress={onNext}>
@@ -153,8 +136,7 @@ export function OnboardingCarousel({ onFinish, onBack }: { onFinish: () => void;
     );
   }
 
-  if (current.variant === 'feature') {
-    return (
+  return (
       <View style={styles.screen}>
         <CoverImage
           source={current.image}
@@ -213,68 +195,13 @@ export function OnboardingCarousel({ onFinish, onBack }: { onFinish: () => void;
           </Pressable>
         </View>
       </View>
-    );
-  }
-
-  return (
-    <View style={styles.screen}>
-      <Pressable style={styles.skip} onPress={onFinish}>
-        <Text style={styles.skipText}>Saltar</Text>
-      </Pressable>
-
-      <Animated.View style={[styles.content, { opacity: fade }]}>
-        <FloatingMascot source={current.image} />
-        <Text style={styles.title}>{current.title}</Text>
-        <Text style={styles.body}>{current.body}</Text>
-      </Animated.View>
-
-      <View style={styles.bottom}>
-        <View style={styles.dots}>
-          {STEPS.map((_, i) => (
-            <View key={i} style={[styles.dot, i === step && styles.dotOn]} />
-          ))}
-        </View>
-
-        <Pressable style={({ pressed }) => [styles.button, pressed && { opacity: 0.9 }]} onPress={onNext}>
-          <Text style={styles.buttonText}>{isLast ? 'Comenzar' : 'Siguiente'}</Text>
-          <Ionicons name="arrow-forward" size={18} color={colors.background} />
-        </Pressable>
-      </View>
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  skip: { position: 'absolute', top: 60, right: spacing.xl, zIndex: 1, padding: spacing.xs },
   skipText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 14 },
-  content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
-  title: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink, textAlign: 'center', marginTop: spacing.lg },
-  body: {
-    fontFamily: fonts.sansMedium,
-    fontSize: 15,
-    color: colors.ink55,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    lineHeight: 21,
-    maxWidth: 320,
-  },
-  bottom: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl, alignItems: 'center', gap: spacing.lg },
   dots: { flexDirection: 'row', gap: 8 },
-  dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.line },
-  dotOn: { backgroundColor: colors.terracotta, width: 20 },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.terracotta,
-    borderRadius: radii.pill,
-    paddingVertical: 16,
-    paddingHorizontal: spacing.xxl,
-    alignSelf: 'stretch',
-    justifyContent: 'center',
-  },
-  buttonText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 16 },
 
   heroTopRow: {
     flexDirection: 'row',
@@ -309,20 +236,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: '90%',
-  },
-  heroBottomRow: {
-    marginTop: 'auto',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: spacing.lg,
-    position: 'relative',
-  },
-  dotsCenterWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
   },
   heroDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.line },
   heroDotOn: { backgroundColor: colors.sageDark },
