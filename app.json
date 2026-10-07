@@ -13,7 +13,10 @@
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:savetrip.vercel.app"
-      ]
+      ],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.vuelveapp.mobile",
@@ -71,19 +74,19 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Vuelve usa tu ubicación para guardar dónde ocurrió cada recuerdo y mostrarlo en el mapa del viaje."
+          "locationWhenInUsePermission": "SaveTrip usa tu ubicación para guardar dónde ocurrió cada recuerdo y mostrarlo en el mapa del viaje."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Vuelve usa tus fotos para añadirlas a los recuerdos de tus viajes."
+          "photosPermission": "SaveTrip usa tus fotos para añadirlas a los recuerdos de tus viajes."
         }
       ],
       [
         "react-native-nfc-manager",
         {
-          "nfcPermission": "Vuelve usa NFC para vincular tus recuerdos a objetos físicos.",
+          "nfcPermission": "SaveTrip usa NFC para vincular tus recuerdos a objetos físicos.",
           "selectIdentifiers": [],
           "systemCodes": []
         }

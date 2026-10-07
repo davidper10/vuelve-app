@@ -21,13 +21,14 @@ import { AuthProvider } from '@/lib/auth-context';
 import { PremiumProvider } from '@/lib/premium-context';
 import { NotificationsProvider } from '@/lib/notifications-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
+import { ScreenTracker } from '@/lib/posthog-screen-tracker';
 import { colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 1.0,
+  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
   debug: __DEV__,
 });
 
@@ -55,13 +56,14 @@ function RootLayout() {
       <PostHogProvider
         apiKey={process.env.EXPO_PUBLIC_POSTHOG_KEY}
         options={{ host: process.env.EXPO_PUBLIC_POSTHOG_HOST }}
-        autocapture
+        autocapture={{ captureScreens: false }}
       >
         <SafeAreaProvider>
           <AuthProvider>
             <PremiumProvider>
               <NotificationsProvider>
                 <ConfirmProvider>
+                  <ScreenTracker />
                   <Stack
                     screenOptions={{
                       headerShown: false,
