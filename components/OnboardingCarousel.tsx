@@ -58,10 +58,10 @@ const STEPS = [
     image: require('../assets/onboarding/share.png'),
     imageNaturalWidth: 941,
     imageNaturalHeight: 1672,
-    title: 'Comparte tus\nhistorias',
-    body: 'Inspira a otros viajeros compartiendo tus viajes, fotos y recuerdos. Elige qué quieres mostrar y mantén el control de tu privacidad.',
+    title: 'Comparte tus\nviajes',
+    body: 'Comparte tus viajes con amigos y familia mediante un enlace, y construid los recuerdos juntos. Tú decides quién puede verlos.',
     features: [
-      { icon: 'people' as const, title: 'Comparte tus viajes', body: 'Publica tus experiencias para inspirar a otros viajeros.' },
+      { icon: 'people' as const, title: 'Comparte con un enlace', body: 'Envía tu viaje a quien quieras y que lo vea al instante.' },
       { icon: 'link' as const, title: 'Invita y colabora', body: 'Comparte un viaje con amigos o familia y añadid recuerdos juntos.' },
       { icon: 'lock-closed' as const, title: 'Tú decides', body: 'Controla qué compartes y con quién. Tu privacidad siempre es lo primero.' },
     ],

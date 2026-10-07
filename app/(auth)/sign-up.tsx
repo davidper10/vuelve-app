@@ -4,6 +4,7 @@ import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { LegalNotice } from '@/components/LegalNotice';
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 
@@ -126,6 +127,10 @@ export default function SignUp() {
       >
         <Text style={styles.primaryButtonText}>{submitting ? 'Creando…' : 'Crear cuenta'}</Text>
       </Pressable>
+
+      <View style={{ marginTop: spacing.md }}>
+        <LegalNotice action="crear tu cuenta" />
+      </View>
 
       <Link href="/(auth)/sign-in" style={styles.link}>
         <Text style={styles.linkText}>Ya tengo cuenta</Text>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import * as Sentry from '@sentry/react-native';
 import { PostHogProvider } from 'posthog-react-native';
@@ -28,6 +29,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enabled: Platform.OS !== 'web',
   tracesSampleRate: __DEV__ ? 1.0 : 0.2,
   debug: __DEV__,
 });
@@ -55,7 +57,7 @@ function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PostHogProvider
         apiKey={process.env.EXPO_PUBLIC_POSTHOG_KEY}
-        options={{ host: process.env.EXPO_PUBLIC_POSTHOG_HOST }}
+        options={{ host: process.env.EXPO_PUBLIC_POSTHOG_HOST, disabled: Platform.OS === 'web' }}
         autocapture={{ captureScreens: false, captureTouches: false }}
       >
         <SafeAreaProvider>

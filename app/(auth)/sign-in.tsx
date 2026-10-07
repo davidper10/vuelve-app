@@ -18,6 +18,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { LegalNotice } from '@/components/LegalNotice';
 
 // fondo_login.png es un retrato alto (941x1672) pensado para que el cielo
 // vacío de arriba sirva de fondo al título y el zorro quede visible abajo.
@@ -172,6 +173,10 @@ export default function SignIn() {
                 onPress={onApple}
               />
             )}
+
+            <View style={{ marginTop: spacing.md }}>
+              <LegalNotice action="continuar con Google o Apple" />
+            </View>
 
             <View style={styles.signUpRow}>
               <Text style={styles.signUpText}>¿No tienes cuenta? </Text>
