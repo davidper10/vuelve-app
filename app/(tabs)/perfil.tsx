@@ -197,7 +197,7 @@ export default function Perfil() {
             <Ionicons name="ribbon-outline" size={19} color={colors.ink} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.premiumTitle}>SaveTrip Plus</Text>
+            <Text style={styles.premiumTitle}>SaveTrip Pro</Text>
             <Text style={styles.premiumBody}>
               Más viajes, más recuerdos, más historias. Lleva tus aventuras al siguiente nivel.
             </Text>
@@ -219,6 +219,16 @@ export default function Perfil() {
       <Pressable style={[styles.deleteAccount, deleting && { opacity: 0.5 }]} onPress={onDeleteAccount} disabled={deleting}>
         <Text style={styles.deleteAccountText}>{deleting ? 'Eliminando cuenta…' : 'Eliminar cuenta'}</Text>
       </Pressable>
+
+      <View style={styles.legalRow}>
+        <Pressable onPress={() => router.push('/privacidad')} hitSlop={8}>
+          <Text style={styles.legalLink}>Política de privacidad</Text>
+        </Pressable>
+        <Text style={styles.legalSeparator}>·</Text>
+        <Pressable onPress={() => router.push('/terminos')} hitSlop={8}>
+          <Text style={styles.legalLink}>Términos de uso</Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -388,4 +398,7 @@ const styles = StyleSheet.create({
   signOutText: { fontFamily: fonts.sansBold, color: colors.terracotta, fontSize: 14 },
   deleteAccount: { alignSelf: 'center', paddingVertical: 8 },
   deleteAccountText: { fontFamily: fonts.sansSemiBold, color: colors.ink38, fontSize: 12.5 },
+  legalRow: { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: spacing.sm },
+  legalLink: { fontFamily: fonts.sansMedium, color: colors.ink55, fontSize: 12.5, textDecorationLine: 'underline' },
+  legalSeparator: { fontFamily: fonts.sansMedium, color: colors.ink38, fontSize: 12.5 },
 });

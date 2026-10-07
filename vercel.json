@@ -9,6 +9,8 @@
   ],
   "rewrites": [
     { "source": "/m/:slug", "destination": "/m/[slug].html" },
-    { "source": "/unirse/:slug", "destination": "/unirse/[slug].html" }
+    { "source": "/unirse/:slug", "destination": "/unirse/[slug].html" },
+    { "source": "/privacidad", "destination": "/privacidad.html" },
+    { "source": "/terminos", "destination": "/terminos.html" }
   ]
 }
