@@ -374,7 +374,6 @@ export type Database = {
       trip_members: {
         Row: {
           id: string
-          invited_email: string | null
           joined_at: string
           role: string
           trip_id: string
@@ -382,7 +381,6 @@ export type Database = {
         }
         Insert: {
           id?: string
-          invited_email?: string | null
           joined_at?: string
           role?: string
           trip_id: string
@@ -390,7 +388,6 @@ export type Database = {
         }
         Update: {
           id?: string
-          invited_email?: string | null
           joined_at?: string
           role?: string
           trip_id?: string

@@ -20,7 +20,6 @@ function randomSlug(length = 8) {
 type Member = {
   id: string;
   user_id: string | null;
-  invited_email: string | null;
   profiles: { full_name: string | null; avatar_url: string | null } | null;
 };
 
@@ -62,7 +61,7 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
       supabase.from('profiles').select('full_name, avatar_url').eq('id', ownerId).single(),
       supabase
         .from('trip_members')
-        .select('id, user_id, invited_email, profiles(full_name, avatar_url)')
+        .select('id, user_id, profiles(full_name, avatar_url)')
         .eq('trip_id', tripId),
       supabase.from('trip_shares').select('share_mode, public_slug').eq('trip_id', tripId).maybeSingle(),
     ]);
@@ -81,15 +80,14 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
   const isOwner = session?.user.id === ownerId;
   const total = 1 + members.length;
   const allPeople = [
-    { key: 'owner', name: owner?.full_name ?? 'Propietario', avatarUrl: owner?.avatar_url, pending: false, isOwner: true, memberId: null as string | null, invitedEmail: null as string | null },
+    { key: 'owner', name: owner?.full_name ?? 'Propietario', avatarUrl: owner?.avatar_url, pending: false, isOwner: true, memberId: null as string | null },
     ...members.map((m) => ({
       key: m.id,
-      name: m.profiles?.full_name ?? m.invited_email ?? 'Invitado',
+      name: m.profiles?.full_name ?? 'Invitado',
       avatarUrl: m.profiles?.avatar_url,
       pending: !m.user_id,
       isOwner: false,
       memberId: m.id,
-      invitedEmail: m.invited_email,
     })),
   ];
   const shown = allPeople.slice(0, 4);
@@ -210,7 +208,7 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
                       {p.name}
                     </Text>
                     <Text style={styles.listMeta}>
-                      {p.isOwner ? 'Propietario' : p.pending ? `Invitación pendiente · ${p.invitedEmail}` : 'Colaborador'}
+                      {p.isOwner ? 'Propietario' : p.pending ? 'Invitación pendiente' : 'Colaborador'}
                     </Text>
                   </View>
                   {isOwner && !p.isOwner && p.memberId && (

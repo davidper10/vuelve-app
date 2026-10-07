@@ -56,7 +56,7 @@ function RootLayout() {
       <PostHogProvider
         apiKey={process.env.EXPO_PUBLIC_POSTHOG_KEY}
         options={{ host: process.env.EXPO_PUBLIC_POSTHOG_HOST }}
-        autocapture={{ captureScreens: false }}
+        autocapture={{ captureScreens: false, captureTouches: false }}
       >
         <SafeAreaProvider>
           <AuthProvider>
