@@ -8,10 +8,13 @@ import { colors, fonts, radii, spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { safeBack } from '@/lib/navigation';
+import { useConfirm } from '@/lib/confirm-context';
 
 export default function EditarPerfil() {
   const insets = useSafeAreaInsets();
-  const { session } = useAuth();
+  const { session, deleteAccount } = useAuth();
+  const confirm = useConfirm();
+  const [deleting, setDeleting] = useState(false);
   const [fullName, setFullName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatar, setAvatar] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -84,6 +87,27 @@ export default function EditarPerfil() {
     router.replace('/(tabs)/perfil');
   };
 
+  const onDeleteAccount = async () => {
+    const ok = await confirm({
+      title: 'Eliminar cuenta',
+      message:
+        'Esto borrará tu cuenta y todos tus viajes, recuerdos, fotos, diario y tags NFC de forma permanente. No hay vuelta atrás: no podrás recuperar nada de esto.',
+      confirmLabel: 'Eliminar mi cuenta',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    setError(null);
+    setDeleting(true);
+    const { error: err } = await deleteAccount();
+    setDeleting(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    router.replace('/(auth)/sign-in');
+  };
+
   if (!loaded) {
     return (
       <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
@@ -139,6 +163,17 @@ export default function EditarPerfil() {
       <Pressable style={styles.cancel} onPress={() => safeBack('/(tabs)/perfil')}>
         <Text style={styles.cancelText}>Cancelar</Text>
       </Pressable>
+
+      <View style={styles.dangerZone}>
+        <Pressable
+          style={[styles.deleteAccount, deleting && { opacity: 0.5 }]}
+          onPress={onDeleteAccount}
+          disabled={deleting || submitting}
+        >
+          <Ionicons name="trash-outline" size={15} color={colors.terracotta} />
+          <Text style={styles.deleteAccountText}>{deleting ? 'Eliminando cuenta…' : 'Eliminar cuenta'}</Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -196,4 +231,7 @@ const styles = StyleSheet.create({
   buttonText: { fontFamily: fonts.sansBold, color: colors.background, fontSize: 15.5 },
   cancel: { marginTop: spacing.md, alignItems: 'center' },
   cancelText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 14 },
+  dangerZone: { width: '100%', marginTop: spacing.xl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.line, alignItems: 'center' },
+  deleteAccount: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: spacing.md },
+  deleteAccountText: { fontFamily: fonts.sansSemiBold, color: colors.terracotta, fontSize: 13.5 },
 });

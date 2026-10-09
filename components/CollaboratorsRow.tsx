@@ -10,7 +10,7 @@ import { usePremium } from '@/lib/premium-context';
 import { presentPaywall } from '@/lib/paywall';
 import { FREE_COLLABORATOR_LIMIT } from '@/lib/limits';
 
-const PUBLIC_BASE_URL = 'https://savetrip.vercel.app/unirse';
+const PUBLIC_BASE_URL = 'https://www.savetrip-app.com/unirse';
 
 function randomSlug(length = 8) {
   const chars = 'abcdefghijkmnpqrstuvwxyz23456789';

@@ -18,7 +18,7 @@ type NfcTag = Tables<'nfc_tags'> & {
 type Moment = Tables<'moments'>;
 type LinkType = 'trip' | 'moment';
 
-const PUBLIC_BASE_URL = 'https://savetrip.vercel.app/m';
+const PUBLIC_BASE_URL = 'https://www.savetrip-app.com/m';
 
 export default function Nfc() {
   const confirm = useConfirm();

@@ -19,7 +19,7 @@ type NfcTagRow = Tables<'nfc_tags'>;
 type Step = 'checking' | 'unsupported' | 'target' | 'scan' | 'done';
 type LinkType = 'trip' | 'moment';
 
-const PUBLIC_BASE_URL = 'https://savetrip.vercel.app/m';
+const PUBLIC_BASE_URL = 'https://www.savetrip-app.com/m';
 
 function randomSlug(length = 6) {
   const chars = 'abcdefghijkmnpqrstuvwxyz23456789';

@@ -12,7 +12,7 @@
       "bundleIdentifier": "com.vuelveapp.mobile",
       "usesAppleSignIn": true,
       "associatedDomains": [
-        "applinks:savetrip.vercel.app"
+        "applinks:www.savetrip-app.com"
       ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -32,12 +32,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "savetrip.vercel.app",
+              "host": "www.savetrip-app.com",
               "pathPrefix": "/m"
             },
             {
               "scheme": "https",
-              "host": "savetrip.vercel.app",
+              "host": "www.savetrip-app.com",
               "pathPrefix": "/unirse"
             }
           ],

@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, gradientFor, radii, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useTrips, type Trip } from '@/lib/use-trips';
-import { useConfirm } from '@/lib/confirm-context';
 import { usePremium } from '@/lib/premium-context';
 import { presentPaywall } from '@/lib/paywall';
 import { supabase } from '@/lib/supabase';
@@ -54,15 +53,12 @@ function ProfileTripCard({ trip }: { trip: Trip }) {
 
 export default function Perfil() {
   const insets = useSafeAreaInsets();
-  const { session, signOut, deleteAccount } = useAuth();
-  const confirm = useConfirm();
+  const { session, signOut } = useAuth();
   const { isPremium } = usePremium();
   const { trips } = useTrips();
   const [momentsCount, setMomentsCount] = useState<number | null>(null);
   const [fullName, setFullName] = useState('Viajero');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const initial = fullName.trim().charAt(0).toUpperCase() || 'A';
   const countries = new Set(trips.map((t) => t.country).filter(Boolean));
@@ -93,27 +89,6 @@ export default function Perfil() {
         .then(({ count }) => setMomentsCount(count ?? 0));
     }, [loadProfile])
   );
-
-  const onDeleteAccount = async () => {
-    const ok = await confirm({
-      title: 'Eliminar cuenta',
-      message:
-        'Esto borrará tu cuenta y todos tus viajes, recuerdos, fotos, diario y tags NFC de forma permanente. No hay vuelta atrás: no podrás recuperar nada de esto.',
-      confirmLabel: 'Eliminar mi cuenta',
-      destructive: true,
-    });
-    if (!ok) return;
-
-    setError(null);
-    setDeleting(true);
-    const { error: err } = await deleteAccount();
-    setDeleting(false);
-    if (err) {
-      setError(err);
-      return;
-    }
-    router.replace('/(auth)/sign-in');
-  };
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -209,15 +184,9 @@ export default function Perfil() {
         </View>
       )}
 
-      {!!error && <Text style={styles.error}>{error}</Text>}
-
       <Pressable style={styles.signOut} onPress={signOut}>
         <Ionicons name="log-out-outline" size={16} color={colors.terracotta} />
         <Text style={styles.signOutText}>Cerrar sesión</Text>
-      </Pressable>
-
-      <Pressable style={[styles.deleteAccount, deleting && { opacity: 0.5 }]} onPress={onDeleteAccount} disabled={deleting}>
-        <Text style={styles.deleteAccountText}>{deleting ? 'Eliminando cuenta…' : 'Eliminar cuenta'}</Text>
       </Pressable>
 
       <View style={styles.legalRow}>
@@ -381,7 +350,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   premiumBtnText: { fontFamily: fonts.sansBold, fontSize: 12, color: colors.background },
-  error: { fontFamily: fonts.sansMedium, color: colors.terracotta, fontSize: 13, textAlign: 'center' },
   signOut: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -396,8 +364,6 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
   },
   signOutText: { fontFamily: fonts.sansBold, color: colors.terracotta, fontSize: 14 },
-  deleteAccount: { alignSelf: 'center', paddingVertical: 8 },
-  deleteAccountText: { fontFamily: fonts.sansSemiBold, color: colors.ink38, fontSize: 12.5 },
   legalRow: { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: spacing.sm },
   legalLink: { fontFamily: fonts.sansMedium, color: colors.ink55, fontSize: 12.5, textDecorationLine: 'underline' },
   legalSeparator: { fontFamily: fonts.sansMedium, color: colors.ink38, fontSize: 12.5 },
