@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { usePremium } from '@/lib/premium-context';
 import { presentPaywall } from '@/lib/paywall';
 import { FREE_COLLABORATOR_LIMIT } from '@/lib/limits';
+import { QrCode } from '@/components/QrCode';
 
 const PUBLIC_BASE_URL = 'https://www.savetrip-app.com/unirse';
 
@@ -61,6 +62,7 @@ function SharePanel({
   onShare: () => void;
   onDisable: () => void;
 }) {
+  const [showQr, setShowQr] = useState(false);
   return (
     <View style={styles.panel}>
       <View style={styles.segment}>
@@ -91,7 +93,17 @@ function SharePanel({
               <Ionicons name="share-social-outline" size={14} color={colors.sageDark} />
               <Text style={styles.shareBtnSmallText}>Compartir</Text>
             </Pressable>
+            <Pressable style={styles.shareBtnSmall} onPress={() => setShowQr((v) => !v)}>
+              <Ionicons name="qr-code-outline" size={14} color={colors.sageDark} />
+              <Text style={styles.shareBtnSmallText}>{showQr ? 'Ocultar QR' : 'QR'}</Text>
+            </Pressable>
           </View>
+          {showQr ? (
+            <View style={styles.qrBox}>
+              <QrCode value={url} size={196} />
+              <Text style={styles.qrHint}>Escanéalo con la cámara para abrir el viaje</Text>
+            </View>
+          ) : null}
           <Pressable style={styles.disableLink} onPress={onDisable} disabled={busy}>
             <Text style={styles.disableLinkText}>Desactivar enlace</Text>
           </Pressable>
@@ -407,6 +419,8 @@ const styles = StyleSheet.create({
   segmentBtnOn: { backgroundColor: colors.background },
   segmentText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.ink55 },
   segmentTextOn: { color: colors.ink },
+  qrBox: { alignItems: 'center', gap: 8, paddingVertical: spacing.sm },
+  qrHint: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink55, textAlign: 'center' },
   cancelBtn: { alignItems: 'center', paddingVertical: 8 },
   cancelBtnText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 13 },
   shareSection: {
