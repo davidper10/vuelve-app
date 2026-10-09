@@ -84,7 +84,6 @@ export default function SignIn() {
 
       <View style={[styles.heroText, { paddingTop: insets.top + spacing.lg }]}>
         <Text style={styles.title}>¿A dónde quieres{'\n'}volver hoy?</Text>
-        <Text style={styles.subtitle}>Tus viajes, tus recuerdos, siempre contigo.</Text>
       </View>
 
       <KeyboardAvoidingView style={[styles.sheetWrap, { marginTop: heroHeight }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -197,7 +196,6 @@ const styles = StyleSheet.create({
   hero: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
   heroText: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: spacing.xl },
   title: { fontFamily: fonts.serif, fontSize: 28, color: colors.ink, lineHeight: 33 },
-  subtitle: { fontFamily: fonts.sans, fontSize: 13.5, color: colors.ink70, marginTop: 6 },
   sheetWrap: { flex: 1 },
   sheet: {
     flex: 1,
