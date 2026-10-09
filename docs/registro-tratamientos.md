@@ -17,6 +17,7 @@ revisarlo un profesional antes de publicar.
 | ID de usuario y estado de suscripción | Gestionar SaveTrip Pro | Ejecución del contrato | Mientras exista el registro (ver pendiente 1) | RevenueCat, Apple | EE. UU. |
 | Pantallas visitadas, dispositivo, IP | Analítica de uso | Interés legítimo | Según plan de PostHog (confirmar) | PostHog | UE |
 | Errores y datos técnicos del dispositivo | Detectar y corregir fallos | Interés legítimo | Según plan de Sentry (confirmar) | Sentry | UE |
+| Zona del mapa consultada y coordenadas del lugar elegido | Mostrar el mapa y el nombre del lugar | Ejecución del contrato | Sin conservación por nuestra parte (confirmar con el proveedor) | OpenFreeMap, OpenStreetMap (Nominatim), unpkg | UE / EE. UU. (confirmar) |
 
 ## Datos que la app NO recoge
 

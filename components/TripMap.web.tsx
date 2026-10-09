@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { radii } from '@/constants/theme';
 import type { Tables } from '@/lib/database.types';
+import { addBaseLayer, ensureMapLibreLeaflet } from '@/lib/maplibre-web';
 
 type Moment = Tables<'moments'>;
 type Pin = { lat: number; lng: number; title: string; place: string | null };
@@ -39,6 +40,7 @@ export function TripMap({ moments }: { moments: Moment[] }) {
     (async () => {
       ensureLeafletCss();
       const L = await import('leaflet');
+      await ensureMapLibreLeaflet(L);
       if (cancelled || !containerRef.current) return;
 
       const pinIcon = L.divIcon({
@@ -51,9 +53,7 @@ export function TripMap({ moments }: { moments: Moment[] }) {
 
       if (!mapRef.current) {
         mapRef.current = L.map(containerRef.current).setView([pins[0].lat, pins[0].lng], 6);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; OpenStreetMap',
-        }).addTo(mapRef.current);
+        addBaseLayer(L, mapRef.current);
       }
 
       pins.forEach((p) => {

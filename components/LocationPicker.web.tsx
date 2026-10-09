@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { addBaseLayer, ensureMapLibreLeaflet } from '@/lib/maplibre-web';
 
 const LEAFLET_CSS_ID = 'leaflet-css-cdn';
 
@@ -33,6 +34,7 @@ export function LocationPicker({
     (async () => {
       ensureLeafletCss();
       const L = await import('leaflet');
+      await ensureMapLibreLeaflet(L);
       if (cancelled || !containerRef.current || mapRef.current) return;
 
       const pinIcon = L.divIcon({
@@ -47,9 +49,7 @@ export function LocationPicker({
         [hasInitial ? initialLat! : 20, hasInitial ? initialLng! : 0],
         hasInitial ? 13 : 3
       );
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap',
-      }).addTo(map);
+      addBaseLayer(L, map);
 
       if (hasInitial) {
         markerRef.current = L.marker([initialLat!, initialLng!], { icon: pinIcon }).addTo(map);

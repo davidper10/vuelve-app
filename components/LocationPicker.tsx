@@ -6,10 +6,13 @@ function buildHtml(initialLat: number, initialLng: number, hasInitial: boolean) 
 <html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
 <style>html,body,#map{height:100%;margin:0;padding:0;}</style>
 </head><body>
 <div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
 <script>
   var pinIcon = L.divIcon({
     html: '<div style="font-size:34px;line-height:34px;">📍</div>',
@@ -18,7 +21,7 @@ function buildHtml(initialLat: number, initialLng: number, hasInitial: boolean) 
     iconAnchor: [17, 32],
   });
   var map = L.map('map').setView([${initialLat}, ${initialLng}], ${hasInitial ? 13 : 3});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+  L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/liberty', attribution: '&copy; OpenMapTiles &copy; OpenStreetMap contributors' }).addTo(map);
   var marker = ${hasInitial ? `L.marker([${initialLat}, ${initialLng}], {icon: pinIcon}).addTo(map)` : 'null'};
   function post(msg) {
     window.ReactNativeWebView.postMessage(JSON.stringify(msg));

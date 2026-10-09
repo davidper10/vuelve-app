@@ -47,6 +47,8 @@ const SECTIONS: LegalSection[] = [
       'PostHog: analítica de uso (servidores en la Unión Europea).',
       'Sentry: informes de errores.',
       'Expo: envío de notificaciones push.',
+      'OpenFreeMap y OpenStreetMap (Nominatim): mapas y nombre de los lugares; reciben las zonas del mapa que consultas y las coordenadas que eliges al guardar un lugar.',
+      'unpkg: entrega de las librerías que dibujan el mapa.',
       'Apple y Google: inicio de sesión con tu cuenta y, en el caso de Apple, cobro de las suscripciones.',
     ],
   },
