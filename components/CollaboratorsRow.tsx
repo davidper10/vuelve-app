@@ -25,6 +25,89 @@ type Member = {
 
 type OwnerProfile = { full_name: string | null; avatar_url: string | null } | null;
 
+type ShareMode = 'view' | 'collab';
+
+const MODE_COPY: Record<ShareMode, { label: string; description: string }> = {
+  view: {
+    label: 'Solo ver',
+    description: 'Cualquiera con el enlace puede ver el viaje, sin necesidad de cuenta. No puede editar nada.',
+  },
+  collab: {
+    label: 'Colaborar',
+    description: 'Quien abra el enlace puede unirse al viaje y añadir recuerdos. Necesita cuenta en SaveTrip.',
+  },
+};
+
+function SharePanel({
+  active,
+  mode,
+  url,
+  busy,
+  copied,
+  onSelectMode,
+  onEnable,
+  onCopy,
+  onShare,
+  onDisable,
+}: {
+  active: boolean;
+  mode: ShareMode;
+  url: string | null;
+  busy: boolean;
+  copied: boolean;
+  onSelectMode: (mode: ShareMode) => void;
+  onEnable: () => void;
+  onCopy: () => void;
+  onShare: () => void;
+  onDisable: () => void;
+}) {
+  return (
+    <View style={styles.panel}>
+      <View style={styles.segment}>
+        {(['view', 'collab'] as const).map((m) => (
+          <Pressable
+            key={m}
+            style={[styles.segmentBtn, mode === m && styles.segmentBtnOn]}
+            onPress={() => onSelectMode(m)}
+            disabled={busy}
+          >
+            <Text style={[styles.segmentText, mode === m && styles.segmentTextOn]}>{MODE_COPY[m].label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={styles.cardBody}>{MODE_COPY[mode].description}</Text>
+
+      {active && url ? (
+        <>
+          <Text style={styles.shareUrl} numberOfLines={1}>
+            {url}
+          </Text>
+          <View style={styles.shareBtnRow}>
+            <Pressable style={styles.shareBtnSmall} onPress={onCopy}>
+              <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={14} color={colors.sageDark} />
+              <Text style={styles.shareBtnSmallText}>{copied ? 'Copiado' : 'Copiar'}</Text>
+            </Pressable>
+            <Pressable style={styles.shareBtnSmall} onPress={onShare}>
+              <Ionicons name="share-social-outline" size={14} color={colors.sageDark} />
+              <Text style={styles.shareBtnSmallText}>Compartir</Text>
+            </Pressable>
+          </View>
+          <Pressable style={styles.disableLink} onPress={onDisable} disabled={busy}>
+            <Text style={styles.disableLinkText}>Desactivar enlace</Text>
+          </Pressable>
+        </>
+      ) : (
+        <View style={styles.shareBtnRow}>
+          <Pressable style={styles.shareBtnSmall} onPress={onEnable} disabled={busy}>
+            <Ionicons name="link-outline" size={14} color={colors.sageDark} />
+            <Text style={styles.shareBtnSmallText}>{busy ? 'Generando…' : 'Generar enlace'}</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
+
 function Avatar({ name, avatarUrl, pending }: { name: string | null; avatarUrl?: string | null; pending?: boolean }) {
   if (avatarUrl) {
     return <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />;
@@ -53,6 +136,8 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [shareMode, setShareMode] = useState<string | null>(null);
   const [shareSlug, setShareSlug] = useState<string | null>(null);
+  const [allowAdd, setAllowAdd] = useState(false);
+  const [pendingMode, setPendingMode] = useState<ShareMode>('view');
   const [shareBusy, setShareBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -63,12 +148,13 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
         .from('trip_members')
         .select('id, user_id, profiles(full_name, avatar_url)')
         .eq('trip_id', tripId),
-      supabase.from('trip_shares').select('share_mode, public_slug').eq('trip_id', tripId).maybeSingle(),
+      supabase.from('trip_shares').select('share_mode, public_slug, allow_add_memories').eq('trip_id', tripId).maybeSingle(),
     ]);
     setOwner(ownerProfile ?? null);
     setMembers((memberRows as Member[]) ?? []);
     setShareMode(share?.share_mode ?? null);
     setShareSlug(share?.public_slug ?? null);
+    setAllowAdd(share?.allow_add_memories ?? false);
   }, [tripId, ownerId]);
 
   useFocusEffect(
@@ -100,14 +186,34 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
   const linkActive = shareMode === 'link';
   const shareUrl = shareSlug ? `${PUBLIC_BASE_URL}/${shareSlug}` : null;
 
+  const currentMode: ShareMode = linkActive ? (allowAdd ? 'collab' : 'view') : pendingMode;
+
+  // El plan gratuito limita las personas que pueden colaborar; ver no cuenta.
+  const canUseCollab = async () => {
+    if (!isPremium && total >= FREE_COLLABORATOR_LIMIT) return presentPaywall();
+    return true;
+  };
+
   const enableLink = async () => {
+    if (pendingMode === 'collab' && !(await canUseCollab())) return;
     setShareBusy(true);
     const slug = shareSlug ?? randomSlug();
-    // Cualquiera con el enlace puede añadir recuerdos: no hay matiz de
-    // permisos, se asume siempre.
     await supabase
       .from('trip_shares')
-      .upsert({ trip_id: tripId, share_mode: 'link', public_slug: slug, allow_add_memories: true });
+      .upsert({ trip_id: tripId, share_mode: 'link', public_slug: slug, allow_add_memories: pendingMode === 'collab' });
+    setShareBusy(false);
+    load();
+  };
+
+  const selectMode = async (mode: ShareMode) => {
+    if (!linkActive) {
+      setPendingMode(mode);
+      return;
+    }
+    if (mode === currentMode) return;
+    if (mode === 'collab' && !(await canUseCollab())) return;
+    setShareBusy(true);
+    await supabase.from('trip_shares').update({ allow_add_memories: mode === 'collab' }).eq('trip_id', tripId);
     setShareBusy(false);
     load();
   };
@@ -134,13 +240,7 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
     }
   };
 
-  const onAddPress = async () => {
-    if (!isPremium && total >= FREE_COLLABORATOR_LIMIT) {
-      const unlocked = await presentPaywall();
-      if (!unlocked) return;
-    }
-    setAddModalOpen(true);
-  };
+  const onAddPress = () => setAddModalOpen(true);
 
   return (
     <View style={styles.row}>
@@ -166,25 +266,19 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
       <Modal visible={addModalOpen} transparent animationType="fade" onRequestClose={() => setAddModalOpen(false)}>
         <View style={styles.overlay}>
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Añadir colaborador</Text>
-            <Text style={styles.cardBody}>Cualquiera con este enlace podrá ver el viaje y añadir recuerdos.</Text>
-
-            {linkActive && shareUrl ? (
-              <>
-                <Text style={styles.shareUrl} numberOfLines={1}>
-                  {shareUrl}
-                </Text>
-                <Pressable style={styles.shareBtnSmall} onPress={copyLink}>
-                  <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={14} color={colors.sageDark} />
-                  <Text style={styles.shareBtnSmallText}>{copied ? 'Copiado' : 'Copiar enlace'}</Text>
-                </Pressable>
-              </>
-            ) : (
-              <Pressable style={styles.shareBtnSmall} onPress={enableLink} disabled={shareBusy}>
-                <Ionicons name="link-outline" size={14} color={colors.sageDark} />
-                <Text style={styles.shareBtnSmallText}>{shareBusy ? 'Generando…' : 'Generar enlace'}</Text>
-              </Pressable>
-            )}
+            <Text style={styles.cardTitle}>Compartir viaje</Text>
+            <SharePanel
+              active={linkActive}
+              mode={currentMode}
+              url={shareUrl}
+              busy={shareBusy}
+              copied={copied}
+              onSelectMode={selectMode}
+              onEnable={enableLink}
+              onCopy={copyLink}
+              onShare={shareLink}
+              onDisable={disableLink}
+            />
 
             <Pressable style={styles.cancelBtn} onPress={() => setAddModalOpen(false)}>
               <Text style={styles.cancelBtnText}>Cerrar</Text>
@@ -222,34 +316,19 @@ export function CollaboratorsRow({ tripId, ownerId }: { tripId: string; ownerId:
 
             {isOwner && (
               <View style={styles.shareSection}>
-                <Text style={styles.shareTitle}>Enlace de unión</Text>
-                {linkActive && shareUrl ? (
-                  <>
-                    <Text style={styles.shareUrl} numberOfLines={1}>
-                      {shareUrl}
-                    </Text>
-                    <View style={styles.shareBtnRow}>
-                      <Pressable style={styles.shareBtnSmall} onPress={copyLink}>
-                        <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={14} color={colors.sageDark} />
-                        <Text style={styles.shareBtnSmallText}>{copied ? 'Copiado' : 'Copiar'}</Text>
-                      </Pressable>
-                      <Pressable style={styles.shareBtnSmall} onPress={shareLink}>
-                        <Ionicons name="share-social-outline" size={14} color={colors.sageDark} />
-                        <Text style={styles.shareBtnSmallText}>Compartir</Text>
-                      </Pressable>
-                    </View>
-                    <Pressable style={styles.disableLink} onPress={disableLink} disabled={shareBusy}>
-                      <Text style={styles.disableLinkText}>Desactivar enlace</Text>
-                    </Pressable>
-                  </>
-                ) : (
-                  <Pressable style={styles.shareBtnSmall} onPress={enableLink} disabled={shareBusy}>
-                    <Ionicons name="link-outline" size={14} color={colors.sageDark} />
-                    <Text style={styles.shareBtnSmallText}>
-                      {shareBusy ? 'Generando…' : 'Generar enlace de unión'}
-                    </Text>
-                  </Pressable>
-                )}
+                <Text style={styles.shareTitle}>Enlace para compartir</Text>
+                <SharePanel
+                  active={linkActive}
+                  mode={currentMode}
+                  url={shareUrl}
+                  busy={shareBusy}
+                  copied={copied}
+                  onSelectMode={selectMode}
+                  onEnable={enableLink}
+                  onCopy={copyLink}
+                  onShare={shareLink}
+                  onDisable={disableLink}
+                />
               </View>
             )}
 
@@ -322,6 +401,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.terracottaLight,
   },
+  panel: { gap: spacing.sm },
+  segment: { flexDirection: 'row', backgroundColor: colors.sand, borderRadius: radii.pill, padding: 3 },
+  segmentBtn: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: radii.pill },
+  segmentBtnOn: { backgroundColor: colors.background },
+  segmentText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: colors.ink55 },
+  segmentTextOn: { color: colors.ink },
   cancelBtn: { alignItems: 'center', paddingVertical: 8 },
   cancelBtnText: { fontFamily: fonts.sansSemiBold, color: colors.ink55, fontSize: 13 },
   shareSection: {

@@ -62,7 +62,8 @@ const SECTIONS: LegalSection[] = [
     heading: '6. Qué ven otras personas',
     bullets: [
       'Las personas con las que compartes un viaje pueden ver su contenido, así como tu nombre y tu foto de perfil.',
-      'Los enlaces públicos de un imán NFC muestran el recuerdo o viaje vinculado a cualquiera que abra el enlace.',
+      'Si compartes un viaje con un enlace en modo «Solo ver», cualquiera que tenga el enlace puede ver sus recuerdos (sin el diario), con o sin cuenta. En modo «Colaborar», quien no sea miembro solo ve el título, la portada y el número de recuerdos hasta que se une con su cuenta. Puedes desactivar el enlace cuando quieras.',
+      'Los enlaces públicos de un imán NFC muestran el recuerdo o viaje vinculado, en solo lectura, a cualquiera que abra el enlace.',
       'Las fotos y vídeos se guardan en un almacenamiento al que se accede mediante una dirección directa; quien conozca esa dirección podría verlos. No compartas esas direcciones con personas en las que no confíes.',
     ],
   },

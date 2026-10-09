@@ -501,6 +501,9 @@ export type Database = {
     }
     Functions: {
       email_for_username: { Args: { username_input: string }; Returns: string }
+      get_shared_nfc: { Args: { p_slug: string }; Returns: Json }
+      get_shared_trip: { Args: { p_slug: string }; Returns: Json }
+      join_trip: { Args: { p_slug: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

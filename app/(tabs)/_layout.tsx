@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { Redirect, router, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth-context';
+import { takePendingJoin } from '@/lib/shared';
 import { colors, fonts } from '@/constants/theme';
 
 function CenterAddButton() {
@@ -14,6 +16,14 @@ function CenterAddButton() {
 
 export default function TabsLayout() {
   const { session, loading } = useAuth();
+
+  // Quien abrió un enlace de colaborar sin cuenta lo retoma al iniciar sesión.
+  useEffect(() => {
+    if (!session) return;
+    takePendingJoin().then((slug) => {
+      if (slug) router.replace(`/unirse/${slug}`);
+    });
+  }, [session]);
 
   if (loading) return null;
   if (!session) return <Redirect href="/(auth)/sign-in" />;
