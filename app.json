@@ -87,7 +87,8 @@
         {
           "nfcPermission": "SaveTrip usa NFC para vincular tus recuerdos a objetos físicos.",
           "selectIdentifiers": [],
-          "systemCodes": []
+          "systemCodes": [],
+          "includeNdefEntitlement": false
         }
       ],
       "expo-web-browser",
